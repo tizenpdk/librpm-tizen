@@ -167,7 +167,7 @@ static PyGetSetDef rpmtd_getseters[] = {
 
 PyTypeObject rpmtd_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.td",			/* tp_name */
+	PYTHON_MODULENAME".td",		/* tp_name */
 	sizeof(rpmtdObject),		/* tp_size */
 	0,				/* tp_itemsize */
 	(destructor) rpmtd_dealloc, 	/* tp_dealloc */
@@ -214,7 +214,7 @@ int rpmtdFromPyObject(PyObject *obj, rpmtd *td)
 	*td = &(((rpmtdObject *)obj)->td);
 	return 1;
     } else {
-	PyErr_SetString(PyExc_TypeError, "rpm.td type expected");
+	PyErr_SetString(PyExc_TypeError, PYTHON_MODULENAME".td type expected");
 	return 0;
     }
 }

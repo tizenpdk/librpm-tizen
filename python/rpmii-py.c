@@ -103,7 +103,7 @@ static char rpmii_doc[] =
 
 PyTypeObject rpmii_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.ii",			/* tp_name */
+	PYTHON_MODULENAME".ii",		/* tp_name */
 	sizeof(rpmiiObject),		/* tp_size */
 	0,				/* tp_itemsize */
 	(destructor) rpmii_dealloc, 	/* tp_dealloc */

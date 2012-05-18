@@ -192,7 +192,7 @@ rpmte_FI(rpmteObject * s, PyObject * args, PyObject * kwds)
 static struct PyMethodDef rpmte_methods[] = {
     {"Type",	(PyCFunction)rpmte_TEType,	METH_NOARGS,
 "te.Type() -> Type\n\
-- Return element type (rpm.TR_ADDED | rpm.TR_REMOVED).\n" },
+- Return element type ("PYTHON_MODULENAME".TR_ADDED | "PYTHON_MODULENAME".TR_REMOVED).\n" },
     {"N",	(PyCFunction)rpmte_N,		METH_NOARGS,
 "te.N() -> N\n\
 - Return element name.\n" },
@@ -250,7 +250,7 @@ static char rpmte_doc[] =
 
 PyTypeObject rpmte_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.te",			/* tp_name */
+	PYTHON_MODULENAME".te",		/* tp_name */
 	sizeof(rpmteObject),		/* tp_size */
 	0,				/* tp_itemsize */
 	(destructor)0,		 	/* tp_dealloc */

@@ -310,7 +310,7 @@ static PyGetSetDef rpmfd_getseters[] = {
 
 PyTypeObject rpmfd_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.fd",			/* tp_name */
+	PYTHON_MODULENAME".fd",		/* tp_name */
 	sizeof(rpmfdObject),		/* tp_size */
 	0,				/* tp_itemsize */
 	/* methods */

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-import rpm
-from rpm._rpm import ts as TransactionSetCore
+import @PYTHON_MODULENAME@ as rpm
+from @PYTHON_MODULENAME@._rpm import ts as TransactionSetCore
 
 # TODO: migrate relevant documentation from C-side
 class TransactionSet(TransactionSetCore):

@@ -393,7 +393,7 @@ static PyObject *hdr_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
     if (obj == NULL) {
 	h = headerNew();
     } else if (CAPSULE_CHECK(obj)) {
-	h = CAPSULE_EXTRACT(obj, "rpm._C_Header");
+	h = CAPSULE_EXTRACT(obj, PYTHON_MODULENAME"._C_Header");
     } else if (hdrObject_Check(obj)) {
 	h = headerCopy(((hdrObject*) obj)->h);
     } else if (PyBytes_Check(obj)) {
@@ -404,7 +404,7 @@ static PyObject *hdr_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
 	Py_END_ALLOW_THREADS;
 	Py_XDECREF(fdo);
     } else {
-    	PyErr_SetString(PyExc_TypeError, "header, blob or file expected");
+    	PyErr_SetString(PyExc_TypeError, "header, blob or file expected!!");
 	return NULL;
     }
 
@@ -684,7 +684,7 @@ static char hdr_doc[] =
 
 PyTypeObject hdr_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.hdr",			/* tp_name */
+	PYTHON_MODULENAME".hdr",	/* tp_name */
 	sizeof(hdrObject),		/* tp_size */
 	0,				/* tp_itemsize */
 	(destructor) hdr_dealloc, 	/* tp_dealloc */
