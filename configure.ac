@@ -894,6 +894,14 @@ AM_CONDITIONAL([WITH_INTERNAL_DB],[test "$with_external_db" = no])
 AM_CONDITIONAL([DOXYGEN],[test "$DOXYGEN" != no])
 AM_CONDITIONAL([HACKINGDOCS],[test "$with_hackingdocs" = yes])
 
+AC_ARG_VAR([PYTHON_MODULENAME], [Name of the rpm python module. Defaults to 'rpm'])
+if test X"$PYTHON_MODULENAME" = X ; then
+    PYTHON_MODULENAME="$PACKAGE"
+fi
+AC_DEFINE_UNQUOTED(PYTHON_MODULENAME, ["$PYTHON_MODULENAME"],[python module name])
+AC_SUBST(PYTHON_MODULENAME)
+
+
 AC_PATH_PROG(AUTOM4TE,autom4te,:)
 
 AC_SUBST([dirstamp],[\${am__leading_dot}dirstamp])

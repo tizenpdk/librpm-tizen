@@ -164,7 +164,7 @@ static char rpmmi_doc[] =
 
 PyTypeObject rpmmi_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.mi",			/* tp_name */
+	PYTHON_MODULENAME".mi",		/* tp_name */
 	sizeof(rpmmiObject),		/* tp_size */
 	0,				/* tp_itemsize */
 	(destructor) rpmmi_dealloc, 	/* tp_dealloc */

@@ -440,7 +440,7 @@ static PyObject *rpmts_setKeyring(rpmtsObject *s, PyObject *arg)
     if (arg == Py_None || rpmKeyringFromPyObject(arg, &keyring)) {
 	return PyBool_FromLong(rpmtsSetKeyring(s->ts, keyring) == 0);
     } else {
-	PyErr_SetString(PyExc_TypeError, "rpm.keyring or None expected");
+	PyErr_SetString(PyExc_TypeError, PYTHON_MODULENAME".keyring or None expected");
 	return NULL;
     }
 }
@@ -872,7 +872,7 @@ static PyGetSetDef rpmts_getseters[] = {
 
 PyTypeObject rpmts_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.ts",			/* tp_name */
+	PYTHON_MODULENAME".ts",		/* tp_name */
 	sizeof(rpmtsObject),		/* tp_size */
 	0,				/* tp_itemsize */
 	(destructor) rpmts_dealloc, 	/* tp_dealloc */
