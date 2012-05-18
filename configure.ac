@@ -904,6 +904,8 @@ AC_CONFIG_FILES([Makefile
 	misc/Makefile 
 	doc/Makefile
 	python/Makefile
+	python/rpm/__init__.py
+	python/rpm/transaction.py
  	luaext/Makefile
  	tests/Makefile
  	plugins/Makefile
