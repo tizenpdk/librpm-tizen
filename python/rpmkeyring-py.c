@@ -52,7 +52,7 @@ static char rpmPubkey_doc[] = "";
 
 PyTypeObject rpmPubkey_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.pubkey",			/* tp_name */
+	PYTHON_MODULENAME".pubkey",	/* tp_name */
 	sizeof(rpmPubkeyObject),	/* tp_size */
 	0,				/* tp_itemsize */
 	(destructor) rpmPubkey_dealloc,/* tp_dealloc */
@@ -133,7 +133,7 @@ static char rpmKeyring_doc[] =
 
 PyTypeObject rpmKeyring_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.keyring",			/* tp_name */
+	PYTHON_MODULENAME".keyring",	/* tp_name */
 	sizeof(rpmKeyringObject),	/* tp_size */
 	0,				/* tp_itemsize */
 	(destructor) rpmKeyring_dealloc,/* tp_dealloc */

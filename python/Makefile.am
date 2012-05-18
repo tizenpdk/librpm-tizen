@@ -5,9 +5,11 @@ EXTRA_DIST = rpm/__init__.py rpm/transaction.py
 AM_CPPFLAGS = -I$(top_builddir)/include/
 AM_CPPFLAGS += -I$(top_srcdir)/python
 AM_CPPFLAGS += -I@WITH_PYTHON_INCLUDE@
+AM_CPPFLAGS += -I$(top_srcdir)
 
-pkgpyexec_LTLIBRARIES = _rpmmodule.la _rpmbmodule.la _rpmsmodule.la
-pkgpyexec_DATA = rpm/__init__.py rpm/transaction.py
+rpmpyexec_LTLIBRARIES = _rpmmodule.la _rpmbmodule.la _rpmsmodule.la
+rpmpyexec_DATA = rpm/__init__.py rpm/transaction.py
+rpmpyexecdir = @pyexecdir@/@PYTHON_MODULENAME@
 
 _rpmmodule_la_LDFLAGS = -module -avoid-version -shared
 _rpmmodule_la_LIBADD = \

@@ -72,7 +72,7 @@ static void rpmprob_dealloc(rpmProblemObject *s)
 
 PyTypeObject rpmProblem_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.prob",			/* tp_name */
+	PYTHON_MODULENAME".prob",		/* tp_name */
 	sizeof(rpmProblemObject),		/* tp_basicsize */
 	0,				/* tp_itemsize */
 	/* methods */

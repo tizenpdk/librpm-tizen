@@ -341,7 +341,7 @@ static char rpmds_doc[] =
 
 PyTypeObject rpmds_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.ds",			/* tp_name */
+	PYTHON_MODULENAME".ds",		/* tp_name */
 	sizeof(rpmdsObject),		/* tp_basicsize */
 	0,				/* tp_itemsize */
 	/* methods */

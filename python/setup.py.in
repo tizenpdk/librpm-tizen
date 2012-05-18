@@ -20,7 +20,7 @@ def mksources(names):
 
 cflags = ['-std=c99']
 
-rpmmod = Extension('rpm._rpm',
+rpmmod = Extension('@PYTHON_MODULENAME@._rpm',
                    sources = mksources([
                                 'header', 'rpmds', 'rpmfd', 'rpmfi', 'rpmii',
                                 'rpmkeyring', 'rpmmacro', 'rpmmi', 'rpmps',
@@ -31,21 +31,21 @@ rpmmod = Extension('rpm._rpm',
                    extra_compile_args = cflags
                   )
 
-rpmbuild_mod = Extension('rpm._rpmb',
+rpmbuild_mod = Extension('@PYTHON_MODULENAME@._rpmb',
                    sources = mksources(['rpmbmodule', 'spec']),
                    include_dirs = pkgconfig('--cflags'),
                    libraries = pkgconfig('--libs') + ['rpmbuild'],
                    extra_compile_args = cflags
                   )
 
-rpmsign_mod = Extension('rpm._rpms',
+rpmsign_mod = Extension('@PYTHON_MODULENAME@._rpms',
                    sources = mksources(['rpmbmodule']),
                    include_dirs = pkgconfig('--cflags'),
                    libraries = pkgconfig('--libs') + ['rpmsign'],
                    extra_compile_args = cflags
                   )
 
-setup(name='@PACKAGE_NAME@-python',
+setup(name='@PACKAGE_NAME@',
       version='@VERSION@',
       description='Python bindings for @PACKAGE_NAME@',
       maintainer_email='@PACKAGE_BUGREPORT@',

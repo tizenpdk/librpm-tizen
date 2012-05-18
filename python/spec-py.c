@@ -31,10 +31,10 @@
 /* Header objects are in another module, some hoop jumping required... */
 static PyObject *makeHeader(Header h)
 {
-    PyObject *rpmmod = PyImport_ImportModuleNoBlock("rpm");
+    PyObject *rpmmod = PyImport_ImportModuleNoBlock(PYTHON_MODULENAME);
     if (rpmmod == NULL) return NULL;
 
-    PyObject *ptr = CAPSULE_BUILD(h, "rpm._C_Header");
+    PyObject *ptr = CAPSULE_BUILD(h, PYTHON_MODULENAME"._C_Header");
     PyObject *hdr = PyObject_CallMethod(rpmmod, "hdr", "(O)", ptr);
     Py_XDECREF(ptr);
     Py_XDECREF(rpmmod);
@@ -62,7 +62,7 @@ static PyGetSetDef specpkg_getseters[] = {
 
 PyTypeObject specPkg_Type = {
 	PyVarObject_HEAD_INIT(&PyType_Type, 0)
-	"rpm.specpkg",			/* tp_name */
+	PYTHON_MODULENAME".specpkg",	/* tp_name */
 	sizeof(specPkgObject),		/* tp_size */
 	0,				/* tp_itemsize */
 	0, 				/* tp_dealloc */
@@ -263,7 +263,7 @@ static struct PyMethodDef spec_methods[] = {
 
 PyTypeObject spec_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
-    "rpm.spec",               /*tp_name*/
+    PYTHON_MODULENAME".spec",  /*tp_name*/
     sizeof(specObject),        /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     (destructor) spec_dealloc, /*tp_dealloc*/
