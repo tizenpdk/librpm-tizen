@@ -81,6 +81,24 @@ struct dbiIndex_s {
 extern "C" {
 #endif
 
+/** \ingroup dbi
+ * Suspend the exclusive lock on the dbi
+ * @param dbi		index database handle
+ * @param flags		(unused)
+ * @return		0 on success
+ */
+RPM_GNUC_INTERNAL
+int dbiSuspendDBLock(dbiIndex dbi, unsigned int flags);
+
+/** \ingroup dbi
+ * Reacquire an exclusive lock on the dbi
+ * @param dbi		index database handle
+ * @param flags		(unused)
+ * @return		0 on success
+ */
+RPM_GNUC_INTERNAL
+int dbiResumeDBLock(dbiIndex dbi, unsigned int flags);
+
 
 RPM_GNUC_INTERNAL
 /* Globally enable/disable fsync in the backend */
