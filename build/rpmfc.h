@@ -106,6 +106,13 @@ rpmds rpmfcProvides(rpmfc fc);
  */
 rpmds rpmfcRequires(rpmfc fc);
 
+/** \ingroup rpmfc
+ * Retrieve file classification supplements
+ * @param fc		file classifier
+ * @return		rpmds dependency set of fc requires
+ */
+rpmds rpmfcSupplements(rpmfc fc);
+
 #ifdef __cplusplus
 }
 #endif
