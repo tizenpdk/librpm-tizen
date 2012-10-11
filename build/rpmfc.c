@@ -58,6 +58,7 @@ struct rpmfc_s {
 
     rpmds provides;	/*!< (no. provides) package provides */
     rpmds requires;	/*!< (no. requires) package requires */
+    rpmds supplements;	/*!< (no. supplements) package supplements */
 };
 
 struct rpmfcTokens_s {
@@ -546,6 +547,22 @@ static int rpmfcHelperRequires(rpmfc fc, const char * nsdep)
     return 0;
 }
 
+/**
+ * Run per-interpreter Supplements: dependency helper.
+ * @param fc		file classifier
+ * @param nsdep		class name for interpreter (e.g. "perl")
+ * @return		0
+ */
+static int rpmfcHelperSupplements(rpmfc fc, const char * nsdep)
+{
+    if (fc->skipReq)
+	return 0;
+
+    rpmfcHelper(fc, nsdep, "supplements", &fc->supplements, RPMSENSE_FIND_REQUIRES|RPMSENSE_STRONG|RPMSENSE_MISSINGOK, RPMTAG_ENHANCESNAME);
+
+    return 0;
+}
+
 /* Only used for elf coloring and controlling RPMTAG_FILECLASS inclusion now */
 static const struct rpmfcTokens_s rpmfcTokens[] = {
   { "directory",		RPMFC_INCLUDE },
@@ -763,6 +780,7 @@ rpmfc rpmfcFree(rpmfc fc)
 
 	rpmdsFree(fc->provides);
 	rpmdsFree(fc->requires);
+	rpmdsFree(fc->supplements);
 	memset(fc, 0, sizeof(*fc)); /* trash and burn */
 	free(fc);
     }
@@ -794,6 +812,11 @@ rpmds rpmfcRequires(rpmfc fc)
     return (fc != NULL ? fc->requires : NULL);
 }
 
+rpmds rpmfcSupplements(rpmfc fc)
+{
+    return (fc != NULL ? fc->supplements : NULL);
+}
+
 rpmRC rpmfcApply(rpmfc fc)
 {
     const char * s;
@@ -814,6 +837,7 @@ rpmRC rpmfcApply(rpmfc fc)
 	for (ARGV_t fattr = fc->fattrs[fc->ix]; fattr && *fattr; fattr++) {
 	    rpmfcHelperProvides(fc, *fattr);
 	    rpmfcHelperRequires(fc, *fattr);
+	    rpmfcHelperSupplements(fc, *fattr);
 	}
     }
     /* No more additions after this, freeze pool to minimize memory use */
@@ -857,6 +881,11 @@ rpmRC rpmfcApply(rpmfc fc)
 	    ds = rpmdsSingle(RPMTAG_REQUIRENAME, N, EVR, Flags);
 	    dix = rpmdsFind(fc->requires, ds);
 	    rpmdsFree(ds);
+	    break;
+	case 'S':
+	    ds = rpmdsSingle(RPMTAG_ENHANCESNAME, N, EVR, Flags);
+	    dix = rpmdsFind(fc->supplements, ds);
+	    ds = rpmdsFree(ds);
 	    break;
 	}
 
@@ -1335,6 +1364,18 @@ rpmRC rpmfcGenerateDepends(const rpmSpec spec, Package pkg)
 	    headerPutString(pkg->header, RPMTAG_REQUIRENAME, rpmdsN(pi));
 	    headerPutString(pkg->header, RPMTAG_REQUIREVERSION, rpmdsEVR(pi));
 	    headerPutUint32(pkg->header, RPMTAG_REQUIREFLAGS, &flags, 1);
+	}
+    }
+
+    /* Add Supplements: */
+    if (!fc->skipReq) {
+	rpmds pi = rpmdsInit(fc->supplements);
+	while (rpmdsNext(pi) >= 0) {
+	    rpmsenseFlags flags = rpmdsFlags(pi);
+	
+	    headerPutString(pkg->header, RPMTAG_ENHANCESNAME, rpmdsN(pi));
+	    headerPutString(pkg->header, RPMTAG_ENHANCESVERSION, rpmdsEVR(pi));
+	    headerPutUint32(pkg->header, RPMTAG_ENHANCESFLAGS, &flags, 1);
 	}
     }
 
