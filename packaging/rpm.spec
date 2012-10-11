@@ -34,91 +34,15 @@ License:        GPL-2.0+
 Group:          System/Packages
 Version:        4.10.1
 Release:        0
-Source:         rpm-%{version}.tar.bz2
-Source1:        RPM-HOWTO.tar.bz2
-Source2:        RPM-Tips.html.tar.bz2
+Source0:         rpm-%{version}.tar.bz2
+Source1:       db-4.8.30.tar.bz2
 Source4:        rpm-tizen_macros
 Source5:        rpmsort
 Source6:        symset-table
 Source8:        rpmconfigcheck
-Source11:       db-4.8.30.tar.bz2
 Source13:	find-docs.sh
 Source22:	device-sec-policy
-Patch2:         db.diff
-# quilt patches start here
-Patch11:        debugedit.diff
-Patch12:        localetag.diff
-Patch13:        missingok.diff
-Patch14:        nameversioncompare.diff
-Patch15:        dbfsync.diff
-Patch16:        dbrointerruptable.diff
-Patch17:        extcond.diff
-Patch18:        refreshtestarch.diff
-Patch19:        rpmrctests.diff
-Patch20:        waitlock.diff
-Patch21:        suspendlock.diff
-Patch22:        weakdeps.diff
-Patch23:        autodeps.diff
-Patch24:        brp.diff
-Patch25:        brpcompress.diff
-Patch26:        checkfilesnoinfodir.diff
-Patch27:        finddebuginfo.diff
-Patch28:        findksyms.diff
-Patch29:        findlang.diff
-Patch30:        macrosin.diff
-Patch31:        modalias.diff
-Patch32:        platformin.diff
-Patch33:        rpmpopt.diff
-Patch34:        rpmrc.diff
-Patch35:        taggedfileindex.diff
-Patch36:        rpmqpack.diff
-Patch37:        convertdb1static.diff
-Patch38:        build.diff
-Patch39:        modalias-kernel_module.diff
-Patch40:        files.diff
-Patch41:        debugedit-comp-dir.diff
-Patch42:        perlprov.diff
-Patch43:        rpm-shorten-changelog.diff
-Patch44:        debugsource-package.diff
-Patch45:        whatrequires-doc.diff
-Patch46:        remove-brp-strips.diff
-Patch47:        requires-ge-macro.diff
-Patch48:        debugedit-canon-fix.diff
-Patch49:        finddebuginfo-absolute-links.diff
-Patch50:        firmware.diff
-Patch51:        specfilemacro.diff
-Patch52:        modalias-encode.diff
-Patch53:        disttag-macro.diff
-Patch54:        buildidprov.diff
-Patch55:        debugsubpkg.diff
-Patch56:        debuglink.diff
-Patch57:        debuginfo-mono.patch
-Patch58:        lazystatfs.diff
-Patch59:        repackage-nomd5.diff
-Patch60:        safeugid.diff
-Patch61:        noprereqdeprec.diff
-Patch62:        pythondeps.diff
-Patch63:        fontprovides.diff
-Patch64:        rpm-gst-provides.patch
-Patch65:        langnoc.diff
-Patch66:        initscriptsprov.diff
-Patch67:        remove-translations.diff
-Patch68:        no_rep_autop.diff
-Patch69:        headeradddb.diff
-Patch70:        dbprivate.diff
-Patch71:        nobuildcolor.diff
-Patch72:        fileattrs.diff
-Patch73:        nomagiccheck.diff
-Patch74:        findsupplements.diff
-Patch75:        assumeexec.diff
-Patch76:        buildpipe.diff
-Patch77:        mono-find-requires.diff
-Patch78:        debugedit-stabs-warning.diff
-Patch79:        headerchk.diff
-Patch80:        rpm-deptracking.patch
-Patch81:        python3-abi-kind.diff
-Patch82:        perl-python-attr.patch
-Patch100:	security_4.9.1.patch
+Patch0:         db-4.8.30-integration.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 #
 # avoid bootstrapping problem
@@ -186,32 +110,13 @@ security-related functionality.
 %prep
 %setup -q -n rpm-%{version}
 rm -rf sqlite
-rm -rf beecrypt
-#tar xjf %{SOURCE10}
-tar xjf %{SOURCE11}
+tar xjf %{S:1}
 ln -s db-4.8.30 db
-#ln -s beecrypt-4.1.2 beecrypt
 chmod -R u+w db/*
-#tar xjf %{SOURCE12}
-#ln -s neon-0.24.7 neon
 # will get linked from db3
 rm -f rpmdb/db.h
-%patch -P 2
-%patch -P 11 -P 12 -P 13 -P 14 -P 15 -P 16 -P 17 -P 18 -P 19
-%patch -P 20 -P 21 -P 22 -P 23 -P 24 -P 25 -P 26 -P 27 -P 28 -P 29
-%patch -P 30 -P 31 -P 32 -P 33 -P 34 -P 35 -P 36 -P 37 -P 38 -P 39
-%patch -P 40 -P 41 -P 42 -P 43 -P 44 -P 45 -P 46 -P 47 -P 48 -P 49
-%patch -P 50 -P 51 -P 52 -P 53 -P 54 -P 55 -P 56 -P 57 -P 58 -P 59
-%patch -P 60 -P 61 -P 62 -P 63 -P 64 -P 65 -P 66 -P 67 -P 68 -P 69
-%patch -P 70 -P 71 -P 72 -P 73 -P 74 -P 75 -P 76 -P 77 -P 78 -P 79 
-%patch -P 80 -P 81 -P 82
-%patch -p1 -P 100
-#chmod 755 scripts/find-supplements{,.ksyms}
-#chmod 755 scripts/find-provides.ksyms scripts/find-requires.ksyms
-#chmod 755 scripts/firmware.prov
-#chmod 755 scripts/debuginfo.prov
-tar -xjvf %{SOURCE1}
-tar -xjvf %{SOURCE2}
+%patch -P 0
+
 if [ -s /etc/rpm/tizen_macros ]; then
 	cp -a /etc/rpm/tizen_macros %{SOURCE4}
 fi
