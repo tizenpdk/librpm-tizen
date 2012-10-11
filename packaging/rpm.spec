@@ -32,7 +32,7 @@ Provides:	rpm-libs
 Summary:        The RPM Package Manager
 License:        GPL-2.0+
 Group:          System/Packages
-Version:        4.9.1.2
+Version:        4.10.1
 Release:        0
 Source:         rpm-%{version}.tar.bz2
 Source1:        RPM-HOWTO.tar.bz2
