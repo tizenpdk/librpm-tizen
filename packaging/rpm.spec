@@ -115,7 +115,7 @@ ln -s db-4.8.30 db
 chmod -R u+w db/*
 # will get linked from db3
 rm -f rpmdb/db.h
-%patch -P 0
+%patch0 -p1
 
 if [ -s /etc/rpm/tizen_macros ]; then
 	cp -a /etc/rpm/tizen_macros %{SOURCE4}
