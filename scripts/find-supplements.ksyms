@@ -1,0 +1,117 @@
+#! /bin/sh
+
+SPECFILE=${RPMBUILD_SPECFILE:-/usr/src/packages/SOURCES/$1.spec}
+IFS=$'\n'
+PACKAGE=$1
+
+case "$1" in
+kernel-module-*)    ;; # Fedora kernel module package names start with
+		       # kernel-module.
+kernel*)	   is_kernel_package=1 ;;
+esac
+
+if ! [ -z "$is_kernel_package" ]; then
+    cat > /dev/null
+    exit 0
+fi
+
+print_modaliases() {
+    declare class=$1 variants=$2 pos=$3
+    if [ -n "$variants" ]; then
+	echo "${class:0:pos}[$variants]${class:pos+1}"
+    else
+	[ -z "$class" ] || echo "$class"
+    fi
+}
+
+combine_modaliases() {
+    declare tag class variants pos n
+    read class
+    while read tag; do
+	for ((n=0; n<${#class}; n++)); do
+	    if [ "*" != "${class:n:1}" -a \
+		 "${class:0:n}" = "${tag:0:n}" -a \
+		 "${class:n+1}" = "${tag:n+1}" ] &&
+	       ( [ -z "$pos" ] || [ $n = $pos ] ); then
+		variants="${variants:-${class:n:1}}${tag:n:1}"
+		pos=$n
+		break
+	    fi
+	done
+	if [ $n -eq ${#class} ]; then
+	    print_modaliases "$class" "$variants" "$pos"
+	    variants=
+	    pos=
+	    class=$tag
+	fi
+    done
+    print_modaliases "$class" "$variants" "$pos"
+}
+
+# Encode all characters other than [*:a-zA-Z0-9] in stdin as %XX.
+# (This includes the % character itself, which becomes %25.)
+hexenc() {
+    local line hex
+
+    while read line; do
+            set -- "" "$line"
+            while [[ "$2" =~ ([*:a-zA-Z0-9]*)([^*:a-zA-Z0-9])(.*) ]]; do
+                hex=$(echo -n "${BASH_REMATCH[2]}" | hexdump -e '"%X"')
+                set -- "$1${BASH_REMATCH[1]}%$hex" "${BASH_REMATCH[3]}"
+            done
+            echo "$1$2"
+    done
+}
+
+aliases_of_filelist() {
+    modlist=$(mktemp)
+    have_module=1
+    for module in $(grep -E '/lib/modules/.+\.ko$'); do
+	vermagic=$(/sbin/modinfo -F vermagic "$module")
+	krel=${vermagic%% *}
+	if ! test -x /sbin/modinfo; then
+		echo "ERROR: add module-init-tools to BuildRequires" >&2
+		exit 1
+	fi
+	have_module=0
+	/sbin/modinfo -F alias "$module" \
+	| hexenc \
+	| sed -nre "s,(.+:.+),modalias(kernel-${krel##*-}:\\1),p" | tee -a $modlist
+    done
+    if ! test -s "$modlist" && test $have_module = 0; then
+        echo "packageand(kernel-${krel##*-}:$PACKAGE)"
+    fi
+    rm -f $modlist
+}
+
+aliases_of_specfile_macro() {
+    declare regex
+
+    regex=$(
+	set -o noglob
+	set -- $(sed -ne 's:^%supplements_kernel_module[ \t]::p' \
+		     $SPECFILE)
+	while [ $# -ge 1 ]; do
+	    regex=$(echo "$1" \
+		    | sed -e 's:[.]:\\.:g' \
+			  -e 's:?:.:g' \
+			  -e 's:\*:.*:g' \
+			  -e 's:\\:\\\\:g')
+	    echo -n "^$regex\$"
+	    [ $# -ge 2 ] && echo -n "|"
+	    shift
+	done
+    )
+
+    if [ -n "$regex" ]; then
+	awk '
+	$1 == "alias" && $3 ~ regex { print $2 }
+	' regex="$regex" /lib/modules/*/modules.alias
+    fi
+}
+
+(   aliases_of_filelist
+    aliases_of_specfile_macro "$1"
+) \
+| sort -u \
+| combine_modaliases
