@@ -813,11 +813,16 @@ static rpmRC rpmpsmStage(rpmpsm psm, pkgStage stage)
 	    rpmpsmNotify(psm, RPMCALLBACK_INST_PROGRESS, 0);
 
 	    if (rpmfiFC(fi) > 0 && !(rpmtsFlags(ts) & RPMTRANS_FLAG_JUSTDB)) {
+		rpmtransFlags oldtsflags;
 		FD_t payload = rpmtePayload(psm->te);
 		if (payload == NULL) {
 		    rc = RPMRC_FAIL;
 		    break;
 		}
+
+		oldtsflags = rpmtsFlags(ts);
+		if (headerIsEntry(fi->h, RPMTAG_REMOVETID))
+		    (void) rpmtsSetFlags(ts, oldtsflags | RPMTRANS_FLAG_NOMD5);
 
 		fsmrc = rpmPackageFilesInstall(psm->ts, psm->te, psm->fi,
 				  payload, psm, &psm->failedFile);
@@ -826,6 +831,9 @@ static rpmRC rpmpsmStage(rpmpsm psm, pkgStage stage)
 			 fdOp(payload, FDSTAT_READ));
 		rpmswAdd(rpmtsOp(psm->ts, RPMTS_OP_DIGEST),
 			 fdOp(payload, FDSTAT_DIGEST));
+
+		if (headerIsEntry(fi->h, RPMTAG_REMOVETID))
+		    (void) rpmtsSetFlags(ts, oldtsflags);
 
 		Fclose(payload);
 	    }
