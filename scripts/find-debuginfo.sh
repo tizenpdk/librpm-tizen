@@ -149,6 +149,11 @@ debug_link()
 # Provide .2, .3, ... symlinks to all filename instances of this build-id.
 make_id_dup_link()
 {
+  # See https://bugzilla.redhat.com/show_bug.cgi?id=641377 for the reasoning, 
+  # but it has seveal drawbacks as we would need to split the .1 suffixes into 
+  # different subpackages and it's about impossible to predict the number
+  # -> perhaps later
+  return
   local id="$1" file="$2" idfile
 
   local n=1
@@ -311,19 +316,11 @@ while read nlinks inum f; do
   fi
 done || exit
 
-# For each symlink whose target has a .debug file,
-# make a .debug symlink to that file.
-find "$RPM_BUILD_ROOT" ! -path "${debugdir}/*" -type l -print |
-while read f
-do
-  t=$(readlink -m "$f").debug
-  f=${f#$RPM_BUILD_ROOT}
-  t=${t#$RPM_BUILD_ROOT}
-  if [ -f "$debugdir$t" ]; then
-    echo "symlinked /usr/lib/debug$t to /usr/lib/debug${f}.debug"
-    debug_link "/usr/lib/debug$t" "${f}.debug"
-  fi
-done
+# We used to make a .debug symlink for each symlink whose target
+# has a .debug file to that file.  This is not necessary because
+# the debuglink section contains only the destination of those links.
+# Creating those links anyway results in debuginfo packages for
+# devel packages just because of the .so symlinks in them.
 
 if [ -s "$SOURCEFILE" ]; then
   mkdir -p "${RPM_BUILD_ROOT}/usr/src/debug"
