@@ -41,7 +41,7 @@
 %_oldincludedir		@oldincludedir@
 %_infodir		@infodir@
 %_mandir		@mandir@
-%_initddir		%{_sysconfdir}/rc.d/init.d
+%_initddir		%{_sysconfdir}/init.d
 # Deprecated misspelling, present for backwards compatibility.
 %_initrddir		%{_initddir}
 
@@ -78,3 +78,21 @@
 @apple@#
 @apple@%_use_internal_dependency_generator     0
 @apple@%__so	dylib
+@Tizen@#---------------------------------------------------------------------
+@Tizen@#        Expanded at end of %prep
+@Tizen@#
+@Tizen@%__id_u          @__ID_U@
+@Tizen@%__chown_Rhf     @__CHOWN_RHF@
+@Tizen@%__chgrp_Rhf     @__CHGRP_RHF@
+@Tizen@%_fixowner       [ `%{__id_u}` = '0' ] && %{__chown_Rhf} root
+@Tizen@%_fixgroup       [ `%{__id_u}` = '0' ] && %{__chgrp_Rhf} root
+@Tizen@%_fixperms       %{__chmod} -Rf @FIXPERMS@
+@Tizen@
+@Tizen@#---------------------------------------------------------------------
+@Tizen@#        Expanded at start of %build
+@Tizen@#
+@Tizen@%__spec_build_pre %{___build_pre}\
+@Tizen@%{?buildroot:  %__rm -rf "$RPM_BUILD_ROOT"\
+@Tizen@  %__mkdir_p `dirname "$RPM_BUILD_ROOT"`\
+@Tizen@  %__mkdir "$RPM_BUILD_ROOT"\
+@Tizen@}
