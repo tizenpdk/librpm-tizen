@@ -866,7 +866,8 @@ posix.setenv("RPMBUILD_SOURCEDIR",rpm.expand("%?_sourcedir"));
 	--localstatedir=%{_localstatedir} \\\
 	--sharedstatedir=%{_sharedstatedir} \\\
 	--mandir=%{_mandir} \\\
-	--infodir=%{_infodir}
+	--infodir=%{_infodir} \\\
+	--disable-dependency-tracking
 
 #------------------------------------------------------------------------------
 # The make install analogue of %configure for modern autotools:
