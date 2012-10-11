@@ -185,7 +185,6 @@
 
 #	Template for debug information sub-package.
 %debug_package \
-%ifnarch noarch\
 %global __debug_package 1\
 %package debuginfo\
 Summary: Debug information for package %{name}\
@@ -197,11 +196,11 @@ Debug information is useful when developing applications that use this\
 package or when debugging this package.\
 %files debuginfo -f debugfiles.list\
 %defattr(-,root,root)\
-%endif\
 %{nil}
 
-%_defaultdocdir		%{_datadir}/doc
+%_defaultdocdir		%{_datadir}/doc/packages
 %_defaultlicensedir	%{_datadir}/licenses
+%_docdir_fmt          %%{NAME}
 
 #	The path to the gzip executable (legacy, use %{__gzip} instead).
 %_gzipbin		%{__gzip}
@@ -238,7 +237,8 @@ package or when debugging this package.\
 %_tmppath		%{_var}/tmp
 
 #	Path to top of build area.
-%_topdir		%{getenv:HOME}/rpmbuild
+%_topdir		%{expand:%%global _topdir %{lua:if posix.access(rpm.expand("%{_usrsrc}/packages"), "w") then print "%{_usrsrc}/packages" else print "%{getenv:HOME}/rpmbuild" end} \
+}%_topdir
 
 #	The path to the unzip executable (legacy, use %{__unzip} instead).
 %_unzipbin		%{__unzip}
@@ -341,7 +341,7 @@ package or when debugging this package.\
 #		"w7.lzdio"	lzma-alone level 7, lzma's default
 #
 #%_source_payload	w9.gzdio
-#%_binary_payload	w9.gzdio
+%_binary_payload	w5.lzdio
 
 #	Algorithm to use for generating file checksum digests on build.
 #	If not specified or 0, MD5 is used.
@@ -440,16 +440,22 @@ package or when debugging this package.\
 # Directories whose contents should be considered as documentation.
 %__docdir_path %{_datadir}/doc:%{_datadir}/man:%{_datadir}/info:%{_datadir}/gtk-doc/html:%{?_docdir}:%{?_mandir}:%{?_infodir}:%{?_javadocdir}:/usr/doc:/usr/man:/usr/info:/usr/X11R6/man
 
+# maxnum,cuttime,minnum
+# 2009/03/01 (SLES11 GA)
+%_binarychangelogtrim 0,1235862000,10
+
 #
 # Path to scripts to autogenerate package dependencies,
 #
 # Note: Used iff _use_internal_dependency_generator is zero.
 #%__find_provides	%{_rpmconfigdir}/rpmdeps --provides
 #%__find_requires	%{_rpmconfigdir}/rpmdeps --requires
-%__find_provides	%{_rpmconfigdir}/find-provides
-%__find_requires	%{_rpmconfigdir}/find-requires
+%__find_provides	%{_rpmconfigdir}/find-provides %name
+%__find_requires	%{_rpmconfigdir}/find-requires %name
 #%__find_conflicts	???
 #%__find_obsoletes	???
+#%__find_supplements	???
+#%__find_enhances	???
 
 # 
 # Path to file attribute classifications for automatic dependency 
@@ -512,10 +518,10 @@ package or when debugging this package.\
 # Misc BDB tuning options
 %__dbi_other			mp_mmapsize=128Mb mp_size=1Mb
 
-%_dbi_config			%{?__dbi_other}
+%_dbi_config			%{?__dbi_other} nofsync
 
 # "Packages" should have shared/exclusive fcntl(2) lock using "lockdbfd".
-%_dbi_config_Packages		%{?_dbi_config} lockdbfd
+%_dbi_config_Packages		%{?__dbi_other} lockdbfd
 
 #==============================================================================
 # ---- GPG/PGP/PGP5 signature macros.
@@ -814,7 +820,7 @@ package or when debugging this package.\
 %_build_vendor		%{_host_vendor}
 %_build_os		%{_host_os}
 %_host			@host@
-%_host_alias		@host_alias@%{nil}
+%_host_alias		@host@%{nil}
 %_host_cpu		@host_cpu@
 %_host_vendor		@host_vendor@
 %_host_os		@host_os@
@@ -978,6 +984,40 @@ done \
 %python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; import sys; sys.stdout.write(get_python_lib(1))")
 %python_version %(%{__python} -c "import sys; sys.stdout.write(sys.version[:3])")
 
+# More useful perl macros (from Raul Dias <rsd@swi.com.br>)
+#
+%perl_version		%(perl -V:version | sed "s!.*='!!;s!'.*!!")
+%perl_man1ext		%(perl -V:man1ext | sed "s!.*='!!;s!'.*!!")
+%perl_man3ext		%(perl -V:man3ext | sed "s!.*='!!;s!'.*!!")
+%perl_man1dir		%(perl -V:man1dir | sed "s!.*='!!;s!'.*!!")
+%perl_man3dir		%(perl -V:man3dir | sed "s!.*='!!;s!'.*!!")
+%perl_installman1dir	%(perl -V:installman1dir | sed "s!.*='!!;s!'.*!!")
+%perl_installman3dir	%(perl -V:installman3dir | sed "s!.*='!!;s!'.*!!")
+%perl_installarchlib	%(perl -V:installarchlib | sed "s!.*='!!;s!'.*!!")
+%perl_prefix		%{buildroot}
+
+#------------------------------------------------------------------------------
+# Python specific macro definitions (originally from PLD).
+#
+%py_ver			%(python -c "import sys; v=sys.version_info[:2]; print '%%d.%%d'%%v" 2>/dev/null || echo PYTHON-NOT-FOUND)
+%py_prefix		%(python -c "import sys; print sys.prefix" 2>/dev/null || echo PYTHON-NOT-FOUND)
+%py_libdir		%{py_prefix}/%{_lib}/python%{py_ver}
+%py_incdir		%{py_prefix}/include/python%{py_ver}
+%py_sitedir		%{py_libdir}/site-packages
+%py_compile(O)	\
+find %1 -name '*.pyc' -exec rm -f {} \\; \
+python -c "import sys, os, compileall; br='%{buildroot}'; compileall.compile_dir(sys.argv[1], ddir=br and (sys.argv[1][len(os.path.abspath(br)):]+'/') or None)" %1 \
+%{-O: \
+find %1 -name '*.pyo' -exec rm -f {} \\; \
+python -O -c "import sys, os, compileall; br='%{buildroot}'; compileall.compile_dir(sys.argv[1], ddir=br and (sys.argv[1][len(os.path.abspath(br)):]+'/') or None)" %1 \
+}
+%py_requires(d) \
+%define minver %py_ver \
+%define maxver %(python -c "import sys; a,b=sys.version_info[:2]; print '%%d.%%d'%%(a,b+1)" 2>/dev/null || echo PYTHON-NOT-FOUND) \
+BuildRequires: python %{-d:python-devel} \
+PreReq: python >= %minver, python < %maxver
+
+
 #------------------------------------------------------------------------------
 # arch macro for all Intel i?86 compatibile processors
 #  (Note: This macro (and it's analogues) will probably be obsoleted when
@@ -988,7 +1028,9 @@ done \
 
 #------------------------------------------------------------------------------
 # arch macro for all supported ARM processors
-%arm	armv3l armv4b armv4l armv4tl armv5tel armv5tejl armv6l armv7l
+%arm	armv3l armv4b armv4l armv4tl armv5b armv5l armv5teb armv5tel armv5tejl armv6l armv7l armv7hl
+%arml	armv3l armv4l armv5l armv5tel armv6l armv7l armv7hl
+%armb	armv4b armv5b armv5teb
 
 #------------------------------------------------------------------------------
 # arch macro for all supported Sparc processors
@@ -1104,3 +1146,22 @@ end}
 
 # \endverbatim
 #*/
+
+
+#------------------------------------------------------------------------
+# standard build service macros
+#
+%ext_info .gz
+%ext_man .gz
+
+%info_add() test -x /sbin/install-info -a -f %{?2}%{?!2:%{_infodir}}/%{1}%ext_info && /sbin/install-info --info-dir=%{?2}%{?!2:%{_infodir}} %{?2}%{?!2:%{_infodir}}/%{1}%ext_info \
+%{nil}
+
+%info_del() test -x /sbin/install-info -a ! -f %{?2}%{?!2:%{_infodir}}/%{1}%ext_info && /sbin/install-info --quiet --delete --info-dir=%{?2}%{?!2:%{_infodir}} %{?2}%{?!2:%{_infodir}}/%{1}%ext_info \
+%{nil}
+
+%user_group_add() \
+/usr/sbin/groupadd -o -r %{1} 2>/dev/null || :\
+/usr/sbin/useradd -o -r -g %{1} -d %{2} -s %{3} -c %{4} %{1} 2>/dev/null || :\
+%{nil}
+
