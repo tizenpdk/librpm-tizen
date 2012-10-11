@@ -11,6 +11,7 @@ solist=($(printf "%s\n" "${filelist[@]}" | grep "\\.so" | grep -v "^/lib/ld.so" 
 pythonlist=
 tcllist=
 monolist=($(printf "%s\n" "${filelist[@]}" | egrep "\\.(exe|dll)\$"))
+firmwarelist=($(printf "%s\n" "${filelist[@]}" | grep "/lib/firmware/"))
 
 #
 # --- Alpha does not mark 64bit dependencies
@@ -57,6 +58,11 @@ done | sort -u
 # --- Tcl modules.
 [ -x /usr/lib/rpm/tcl.prov -a -n "$tcllist" ] &&
     printf "%s\n" "${tcllist[@]}" | /usr/lib/rpm/tcl.prov | sort -u
+
+#
+# --- firmware files
+[ -x /usr/lib/rpm/firmware.prov -a -n "$firmwarelist" ] &&
+     printf "%s\n" "${firmwarelist[@]}" | /usr/lib/rpm/firmware.prov | sort -u
 
 #
 # --- Mono exes/dlls
