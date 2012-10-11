@@ -144,6 +144,24 @@ static int skipColor(rpm_color_t tscolor, rpm_color_t color, rpm_color_t ocolor)
     return tscolor && color && ocolor && !(color & ocolor);
 }
 
+static int rpmNameVersionCompare(Header first, Header second)
+{
+    const char * one, * two;
+    int rc;
+
+    one = headerGetString(first, RPMTAG_NAME);
+    two = headerGetString(second, RPMTAG_NAME);
+    rc = strcmp(one, two);
+    if (rc)
+	return rc;
+    one = headerGetString(first, RPMTAG_ARCH);
+    two = headerGetString(second, RPMTAG_ARCH);
+    rc = strcmp(one, two);
+    if (rc)
+	return rc;
+    return rpmVersionCompare(first, second);
+}
+
 /* Add erase elements for older packages of same color (if any). */
 static int addUpgradeErasures(rpmts ts, rpm_color_t tscolor,
 				rpmte p, rpm_color_t hcolor, Header h)
@@ -157,8 +175,8 @@ static int addUpgradeErasures(rpmts ts, rpm_color_t tscolor,
 	if (skipColor(tscolor, hcolor, headerGetNumber(oh, RPMTAG_HEADERCOLOR)))
 	    continue;
 
-	/* Skip packages that contain identical NEVR. */
-	if (rpmVersionCompare(h, oh) == 0)
+	/* Skip packages that contain identical NEVRA. */
+	if (rpmNameVersionCompare(h, oh) == 0)
 	    continue;
 
 	if (removePackage(ts, oh, p)) {
