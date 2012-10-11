@@ -1,0 +1,319 @@
+# directories
+%_infodir               %{_prefix}/share/info
+%_mandir                %{_prefix}/share/man
+%_sysconfdir            /etc
+%_localstatedir         /var
+%_defaultdocdir         %{_usr}/share/doc/packages
+
+# package build macros
+%make_install           make install DESTDIR=%{?buildroot}
+%makeinstall            make DESTDIR=%{?buildroot:%{buildroot}} install
+%rb_arch                %(echo %{_host_cpu}-linux | sed -e "s/i686/i586/" -e "s/armv5tel/armv4l/" -e "s/hppa2.0/hppa/")
+%rb_ver                 %(/usr/bin/ruby -e 'puts VERSION.sub(/\\\.\\\d$/, "")')
+
+# this script calls all scripts in /usr/lib/rpm/brp-tizen.d
+%__os_install_post  \
+	/usr/lib/rpm/brp-compress \
+	/usr/lib/rpm/brp-tizen  \
+	%{!?disable_docs_package:/usr/lib/rpm/tizen/find-docs.sh %{buildroot}} \
+%{nil}
+
+# macro: %restart_on_update()
+#	Used to restart a service in postun section, if we are
+#	not running from YaST2 in instsys on update.
+%restart_on_update() \
+	test -n "$FIRST_ARG" || FIRST_ARG=$1 \
+	if test "$FIRST_ARG" -ge 1 ; then \
+	   test -f /etc/sysconfig/services && . /etc/sysconfig/services \
+           if test "$YAST_IS_RUNNING" != "instsys" -a "$DISABLE_RESTART_ON_UPDATE" != yes ; then \
+              for service in %{?*} ; do \
+                 /etc/init.d/$service try-restart > /dev/null || : \
+              done \
+           fi \
+        fi \
+	%nil
+
+# macro: %stop_on_removal()
+#       Used to stop a service in preun section, if we are
+#       not running from YaST2 in instsys on removal of this package.
+%stop_on_removal() \
+        test -n "$FIRST_ARG" || FIRST_ARG=$1 \
+        if test "$FIRST_ARG" = "0" ; then \
+	   test -f /etc/sysconfig/services && . /etc/sysconfig/services \
+           if test "$YAST_IS_RUNNING" != "instsys" -a "$DISABLE_STOP_ON_REMOVAL" != yes ; then \
+              for service in %{?*} ; do \
+                 /etc/init.d/$service stop > /dev/null \
+              done \
+           fi \
+        fi \
+        %nil
+# macro: %configure_kernel_source
+#
+#
+%configure_kernel_source() \
+	if test -d /usr/src/linux ; then \
+	    pushd /usr/src/linux \
+	    test -f .config || cp arch/%_arch/defconfig.default .config \
+	    yes "" | make oldconfig \
+	    make dep \
+	    popd \
+	fi \
+	%nil
+
+%is_plus %(if test -f /.buildenv ; then source /.buildenv ; if [[ "$BUILD_BASENAME" == *+kde ]] ; then echo 1 ; else echo 0 ; fi ; else echo 0 ; fi)
+
+		
+%install_info(:-:) \
+    ALL_ARGS=(%{**}) \
+    NUM_ARGS=${#ALL_ARGS[@]} \
+    if test -x /sbin/install-info ; then \
+	if test -e "${ALL_ARGS[$((NUM_ARGS-1))]}" ; then \
+	    /sbin/install-info "${ALL_ARGS[@]}" \
+	fi \
+    fi ; 
+
+%install_info_delete(:-:) \
+    ALL_ARGS=(%{**}) \
+    NUM_ARGS=${#ALL_ARGS[@]} \
+    if test -x /sbin/install-info ; then \
+	if ! test -e "${ALL_ARGS[$((NUM_ARGS-1))]}" ; then \
+	    /sbin/install-info --quiet --delete "${ALL_ARGS[@]}" \
+	fi ; \
+    fi ; 
+
+# find-supplements.ksyms parses this macro directly out of the spec file:
+%supplements_kernel_module() \
+    %{expand:%(if ! rpm -q kernel-syms > /dev/null; then echo "%fail Please add the kernel-syms package to BuildRequires"; fi)}
+
+%tizen_version 100
+
+%do_profiling 1
+%cflags_profile_generate -fprofile-generate
+%cflags_profile_feedback -fprofile-use
+
+
+# Template for lang sub-package.
+%lang_package(n:) \
+%package %{-n:-n %{-n*}-}lang \
+Summary: Languages for package %{name} \
+Group: System/Localization \
+Requires: %{-n:%{-n*}}%{!-n:%{name}} = %{version} \
+Provides: %{-n:%{-n*}}%{!-n:%{name}}-lang-all = %{version} \
+Supplements: packageand(bundle-lang-other:%{-n:%{-n*}}%{!-n:%{name}}) \
+BuildArch: noarch \
+%description %{-n:-n %{-n*}-}lang \
+Provides translations to the package %{name}
+
+
+
+# Tizen
+#
+%configure \
+  CFLAGS="${CFLAGS:-%optflags}" ; export CFLAGS ; \
+  CXXFLAGS="${CXXFLAGS:-%optflags}" ; export CXXFLAGS ; \
+  FFLAGS="${FFLAGS:-%optflags -I%_fmoddir}" ; export FFLAGS ; \
+  ./configure --build=%{_build} --host=%{_host} \\\
+        --target=%{_target_platform} \\\
+        --program-prefix=%{?_program_prefix} \\\
+        --prefix=%{_prefix} \\\
+        --exec-prefix=%{_exec_prefix} \\\
+        --bindir=%{_bindir} \\\
+        --sbindir=%{_sbindir} \\\
+        --sysconfdir=%{_sysconfdir} \\\
+        --datadir=%{_datadir} \\\
+        --includedir=%{_includedir} \\\
+        --libdir=%{_libdir} \\\
+        --libexecdir=%{_libexecdir} \\\
+        --localstatedir=%{_localstatedir} \\\
+        --sharedstatedir=%{_sharedstatedir} \\\
+        --mandir=%{_mandir} \\\
+        --infodir=%{_infodir}
+
+
+%reconfigure \
+  CFLAGS="${CFLAGS:-%optflags}" ; export CFLAGS ; \
+  CXXFLAGS="${CXXFLAGS:-%optflags}" ; export CXXFLAGS ; \
+  FFLAGS="${FFLAGS:-%optflags -I%_fmoddir}" ; export FFLAGS ; \
+  autoreconf -v --install --force || exit 1 \
+  ./configure --build=%{_build} --host=%{_host} \\\
+        --target=%{_target_platform} \\\
+        --program-prefix=%{?_program_prefix} \\\
+        --prefix=%{_prefix} \\\
+        --exec-prefix=%{_exec_prefix} \\\
+        --bindir=%{_bindir} \\\
+        --sbindir=%{_sbindir} \\\
+        --sysconfdir=%{_sysconfdir} \\\
+        --datadir=%{_datadir} \\\
+        --includedir=%{_includedir} \\\
+        --libdir=%{_libdir} \\\
+        --libexecdir=%{_libexecdir} \\\
+        --localstatedir=%{_localstatedir} \\\
+        --sharedstatedir=%{_sharedstatedir} \\\
+        --mandir=%{_mandir} \\\
+        --infodir=%{_infodir}
+
+%autogen \
+  CFLAGS="${CFLAGS:-%optflags}" ; export CFLAGS ; \
+  CXXFLAGS="${CXXFLAGS:-%optflags}" ; export CXXFLAGS ; \
+  FFLAGS="${FFLAGS:-%optflags -I%_fmoddir}" ; export FFLAGS ; \
+  ./autogen.sh --build=%{_build} --host=%{_host} \\\
+        --target=%{_target_platform} \\\
+        --program-prefix=%{?_program_prefix} \\\
+        --prefix=%{_prefix} \\\
+        --exec-prefix=%{_exec_prefix} \\\
+        --bindir=%{_bindir} \\\
+        --sbindir=%{_sbindir} \\\
+        --sysconfdir=%{_sysconfdir} \\\
+        --datadir=%{_datadir} \\\
+        --includedir=%{_includedir} \\\
+        --libdir=%{_libdir} \\\
+        --libexecdir=%{_libexecdir} \\\
+        --localstatedir=%{_localstatedir} \\\
+        --sharedstatedir=%{_sharedstatedir} \\\
+        --mandir=%{_mandir} \\\
+        --infodir=%{_infodir}
+
+
+%makeinstall \
+  %{__make} \\\
+        prefix=%{?buildroot:%{buildroot}}%{_prefix} \\\
+        exec_prefix=%{?buildroot:%{buildroot}}%{_exec_prefix} \\\
+        bindir=%{?buildroot:%{buildroot}}%{_bindir} \\\
+        sbindir=%{?buildroot:%{buildroot}}%{_sbindir} \\\
+        sysconfdir=%{?buildroot:%{buildroot}}%{_sysconfdir} \\\
+        datadir=%{?buildroot:%{buildroot}}%{_datadir} \\\
+        includedir=%{?buildroot:%{buildroot}}%{_includedir} \\\
+        libdir=%{?buildroot:%{buildroot}}%{_libdir} \\\
+        libexecdir=%{?buildroot:%{buildroot}}%{_libexecdir} \\\
+        localstatedir=%{?buildroot:%{buildroot}}%{_localstatedir} \\\
+        sharedstatedir=%{?buildroot:%{buildroot}}%{_sharedstatedir} \\\
+        mandir=%{?buildroot:%{buildroot}}%{_mandir} \\\
+        infodir=%{?buildroot:%{buildroot}}%{_infodir} \\\
+  install
+
+
+%make_install \
+  %{__make} \\\
+        DESTDIR=%{?buildroot:%{buildroot}} \\\
+        INSTALL_ROOT=%{?buildroot:%{buildroot}} \\\
+  install \
+  rm -f %{?buildroot:%{buildroot}}%{_infodir}/dir \
+  find %{?buildroot:%{buildroot}} -regex ".*\\.la$" | xargs rm -f -- \
+  %{!?keepstatic:find %{?buildroot:%{buildroot}} -regex ".*\\.a$" | xargs rm -f --}
+
+%_smp_mflags %([ -z "$RPM_BUILD_NCPUS" ] \\\
+        && RPM_BUILD_NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`"; \\\
+        [ "$RPM_BUILD_NCPUS" -gt 1 ] && echo "-j$RPM_BUILD_NCPUS")
+
+
+%lang_package \
+%package locale \
+Summary: Translations and Locale for package %{name}\
+Group: Translations\
+AutoReqProv: 0\
+%description locale\
+This package provides translations for package %{name}.\
+%files locale -f %{name}.lang\
+%defattr(-,root,root,-)\
+%{nil}
+
+
+%docs_package \
+%package docs \
+Summary: Documentation for package %{name}\
+Group: Documentation\
+AutoReqProv: 0\
+%description docs\
+This package provides documentation for package %{name}.\
+%files docs -f documentation.list\
+%defattr(-,root,root,-)\
+%{nil}
+
+
+
+# Bad hack to set $LANG to C during all RPM builds
+%prep \
+%%prep\
+LANG=C\
+export LANG\
+unset DISPLAY\
+%{nil}
+
+%build %%build\
+LANG=C\
+export LANG\
+unset DISPLAY\
+CFLAGS="%optflags" ; export CFLAGS ; \
+CXXFLAGS="${CXXFLAGS:-%optflags}" ; export CXXFLAGS ; \
+FFLAGS="${FFLAGS:-%optflags -I%_fmoddir}" ; export FFLAGS ; \
+LD_AS_NEEDED=1; export LD_AS_NEEDED ; \
+%{nil}
+
+%install %{?_enable_debug_packages:%{?buildsubdir:%{debug_package}}}\
+%%install\
+LANG=C\
+export LANG\
+unset DISPLAY\
+rm -rf %{?buildroot:%{buildroot}} \
+mkdir -p %{?buildroot:%{buildroot}} \
+%{nil}
+
+
+%clean %%clean\
+rm -rf %{?buildroot:%{buildroot}} \
+%{nil}
+
+%find_lang      /usr/lib/rpm/find-lang.sh %{buildroot}
+%find_docs      /usr/lib/rpm/tizen/find-docs.sh %{buildroot}
+
+
+
+#==============================================================================
+# ---- default .desktop directories per the desktop-entry freedesktop.org spec
+
+%_desktopdir    %{_datadir}/applications
+
+#==============================================================================
+# ---- Generic auto req/prov filtering macros
+#
+# http://fedoraproject.org/wiki/PackagingDrafts/AutoProvidesAndRequiresFiltering
+
+# prevent anything matching from being scanned for provides
+%filter_provides_in(P) %{expand: \
+%global __filter_prov_cmd %{?__filter_prov_cmd} %{__grep} -v %{-P} '%*' | \
+}
+
+# prevent anything matching from being scanned for requires
+%filter_requires_in(P) %{expand: \
+%global __filter_req_cmd %{?__filter_req_cmd} %{__grep} -v %{-P} '%*' | \
+}
+
+# filter anything matching out of the provides stream
+%filter_from_provides() %{expand: \
+%global __filter_from_prov %{?__filter_from_prov} | %{__sed} -e '%*' \
+}
+
+# filter anything matching out of the requires stream
+%filter_from_requires() %{expand: \
+%global __filter_from_req %{?__filter_from_req} | %{__sed} -e '%*' \
+}
+
+# actually set up the filtering bits
+%filter_setup %{expand: \
+%global _use_internal_dependency_generator 0 \
+%global __deploop() while read FILE; do /usr/lib/rpm/rpmdeps -%{1} ${FILE}; done | /bin/sort -u \
+%global __find_provides /bin/sh -c "%{?__filter_prov_cmd} %{__deploop P} %{?__filter_from_prov}" \
+%global __find_requires /bin/sh -c "%{?__filter_req_cmd}  %{__deploop R} %{?__filter_from_req}" \
+}
+
+%remove_docs \
+  rm -rf %{?buildroot:%{buildroot}}%{_infodir} \
+  rm -rf %{?buildroot:%{buildroot}}%{_defaultdocdir} \
+  rm -rf %{?buildroot:%{buildroot}}%{_datadir}/doc/%{name} \
+  rm -rf %{?buildroot:%{buildroot}}%{_datadir}/doc/%{name}-%{version} \
+  rm -rf %{?buildroot:%{buildroot}}%{_datadir}/gtk-doc \
+  rm -rf %{?buildroot:%{buildroot}}%{_datadir}/doc \
+  rm -rf %{?buildroot:%{buildroot}}%{_datadir}/man \
+  find %{?buildroot:%{buildroot}} -regex ".*/man/man./.*\.[0-9]" | xargs rm -f -- \
+  find %{?buildroot:%{buildroot}} -regex ".*/man/../man./.*\.[0-9]" | xargs rm -f -- \
+  find %{?buildroot:%{buildroot}} -regex ".*/man/man./.*\.[0-9]pm" | xargs rm -f --

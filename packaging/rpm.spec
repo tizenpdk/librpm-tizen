@@ -34,15 +34,15 @@ License:        GPL-2.0+
 Group:          System/Packages
 Version:        4.10.1
 Release:        0
-Source0:         rpm-%{version}.tar.bz2
-Source1:       db-4.8.30.tar.bz2
+Source0:        rpm-%{version}.tar.bz2
+Source1:       	db-4.8.30.tar.bz2
+Source2:	db-4.8.30-integration.dif
 Source4:        rpm-tizen_macros
 Source5:        rpmsort
 Source6:        symset-table
 Source8:        rpmconfigcheck
 Source13:	find-docs.sh
 Source22:	device-sec-policy
-Patch0:         db-4.8.30-integration.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 #
 # avoid bootstrapping problem
@@ -115,7 +115,7 @@ ln -s db-4.8.30 db
 chmod -R u+w db/*
 # will get linked from db3
 rm -f rpmdb/db.h
-%patch0 -p1
+patch -p0 < %{S:2}
 
 if [ -s /etc/rpm/tizen_macros ]; then
 	cp -a /etc/rpm/tizen_macros %{SOURCE4}
