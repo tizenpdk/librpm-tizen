@@ -419,10 +419,12 @@ static rpmRC runScript(rpmpsm psm, ARGV_const_t prefixes,
     if (sfd == NULL)
 	sfd = rpmtsScriptFd(psm->ts);
 
+    rpmtsSuspendResumeDBLock(psm->ts, 0);
     rpmswEnter(rpmtsOp(psm->ts, RPMTS_OP_SCRIPTLETS), 0);
     rc = rpmScriptRun(script, arg1, arg2, sfd,
 		      prefixes, warn_only, selinux);
     rpmswExit(rpmtsOp(psm->ts, RPMTS_OP_SCRIPTLETS), 0);
+    rpmtsSuspendResumeDBLock(psm->ts, 1);
 
     /* Map warn-only errors to "notfound" for script stop callback */
     stoprc = (rc != RPMRC_OK && warn_only) ? RPMRC_NOTFOUND : rc;
