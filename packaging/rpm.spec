@@ -146,9 +146,7 @@ autoreconf -i -f
 --libdir=%{_libdir} --sysconfdir=/etc --localstatedir=/var  --with-lua \
 --with-acl --with-cap  --enable-shared %{?with_python: --enable-python} $BUILDTARGET
 
-rm po/de.gmo
 make %{?_smp_mflags}
-make convertdb1
 
 %install
 mkdir -p %{buildroot}/usr/lib
