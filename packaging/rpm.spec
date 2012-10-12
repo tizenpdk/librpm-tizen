@@ -153,7 +153,6 @@ mkdir -p %{buildroot}/usr/lib
 mkdir -p %{buildroot}/usr/share/locale
 ln -s ../share/locale %{buildroot}/usr/lib/locale
 %make_install
-install -m 755 convertdb1 %{buildroot}/usr/lib/rpm
 install -m 644 db3/db.h %{buildroot}/usr/include/rpm
 # remove .la file and the static variant of libpopt
 # have to remove the dependency from other .la files as well
