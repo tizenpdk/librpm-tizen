@@ -228,9 +228,7 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 
 %files -f rpm.lang
 %defattr(-,root,root)
-%doc 	CHANGES.gz COPYING GROUPS
-%doc 	doc/manual
-%doc    RPM-HOWTO RPM-Tips
+%doc 	COPYING GROUPS
 	/etc/rpm
 	/bin/rpm
 	/usr/bin/*
