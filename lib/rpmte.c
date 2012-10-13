@@ -730,8 +730,6 @@ static int rpmteClose(rpmte te, int reset_fi)
     case TR_ADDED:
 	if (te->fd) {
 	    rpmtsNotify(te->ts, te, RPMCALLBACK_INST_CLOSE_FILE, 0, 0);
-	    if (te->fd) /* not yet closed */
-	        Fclose(te->fd);
 	    te->fd = NULL;
 	}
 	break;
