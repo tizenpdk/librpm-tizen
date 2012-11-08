@@ -1,7 +1,7 @@
 Name:           rpm
 BuildRequires:  binutils
 BuildRequires:  bzip2
-BuildRequires:  libmagic-devel
+BuildRequires:  file-devel
 BuildRequires:  findutils
 BuildRequires:  gcc
 BuildRequires:  gettext-tools
