@@ -16,6 +16,7 @@
 #include "lib/header_internal.h"
 #include "lib/misc.h"			/* tag function proto */
 
+#include <errno.h>
 #include "debug.h"
 
 /** \ingroup header
