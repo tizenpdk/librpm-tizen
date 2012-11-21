@@ -236,7 +236,6 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 	/usr/lib/rpm
 %dir 	%{_libdir}/rpm-plugins
 	%{_libdir}/rpm-plugins/exec.so
-	%{_libdir}/rpm-plugins/sepolicy.so
 	%{_libdir}/librpm.so.*
 	%{_libdir}/librpmbuild.so.*
 	%{_libdir}/librpmio.so.*
