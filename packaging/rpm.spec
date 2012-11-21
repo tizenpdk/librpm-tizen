@@ -36,7 +36,7 @@ Version:        4.10.90
 Release:        0
 Source0:        rpm-%{version}.tar.bz2
 Source1:       	db-4.8.30.tar.bz2
-Source2:	db-4.8.30-integration.dif
+Source2:	    db-4.8.30-integration.dif
 Source4:        rpm-tizen_macros
 Source5:        rpmsort
 Source6:        symset-table
