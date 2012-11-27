@@ -50,7 +50,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
 RPM Package Manager is the main tool for managing the software packages
-of the SuSE Linux distribution.
+of Tizen.
 
 RPM can be used to install and remove software packages. With rpm, it
 is easy to update packages.  RPM keeps track of all these manipulations
