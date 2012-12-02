@@ -92,17 +92,6 @@
 %cflags_profile_feedback -fprofile-use
 
 
-# Template for lang sub-package.
-%lang_package(n:) \
-%package %{-n:-n %{-n*}-}lang \
-Summary: Languages for package %{name} \
-Group: System/Localization \
-Requires: %{-n:%{-n*}}%{!-n:%{name}} = %{version} \
-Provides: %{-n:%{-n*}}%{!-n:%{name}}-lang-all = %{version} \
-Supplements: packageand(bundle-lang-other:%{-n:%{-n*}}%{!-n:%{name}}) \
-BuildArch: noarch \
-%description %{-n:-n %{-n*}-}lang \
-Provides translations to the package %{name}
 
 
 
@@ -205,30 +194,30 @@ Provides translations to the package %{name}
         && RPM_BUILD_NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`"; \\\
         [ "$RPM_BUILD_NCPUS" -gt 1 ] && echo "-j$RPM_BUILD_NCPUS")
 
+# Template for lang sub-package.
+%lang_package(n:) \
+%package %{-n:-n %{-n*}-}lang \
+Summary: Languages for package %{name} \
+Group: System/Localization \
+Requires: %{-n:%{-n*}}%{!-n:%{name}} = %{version} \
+Provides: %{-n:%{-n*}}%{!-n:%{name}}-lang-all = %{version} \
+Supplements: packageand(bundle-lang-other:%{-n:%{-n*}}%{!-n:%{name}}) \
+BuildArch: noarch \
+%description %{-n:-n %{-n*}-}lang \
+Provides translations to the package %{name}
 
-%lang_package \
-%package locale \
+%lang_package(n:f:) \
+%package %{-n:-n %{-n*}-}locale \
 Summary: Translations and Locale for package %{name}\
-Group: Translations\
-AutoReqProv: 0\
-%description locale\
+Group: System/Localization\
+Requires: %{-n:%{-n*}}%{!-n:%{name}} = %{version} \
+Provides: %{-n:%{-n*}}%{!-n:%{name}}-lang-all = %{version} \
+BuildArch:  noarch \
+%description %{-n:-n %{-n*}-}locale\
 This package provides translations for package %{name}.\
-%files locale -f %{name}.lang\
+%files %{-n:-n %{-n*}-}locale -f %{-f:%{-f*}.lang} %{!-f:%{name}.lang}\
 %defattr(-,root,root,-)\
 %{nil}
-
-
-%docs_package \
-%package docs \
-Summary: Documentation for package %{name}\
-Group: Documentation\
-AutoReqProv: 0\
-%description docs\
-This package provides documentation for package %{name}.\
-%files docs -f documentation.list\
-%defattr(-,root,root,-)\
-%{nil}
-
 
 
 # Bad hack to set $LANG to C during all RPM builds
