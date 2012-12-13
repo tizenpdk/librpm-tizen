@@ -1,11 +1,11 @@
 %define rpmlibdir %{_prefix}/lib
 %define rpmhome %{rpmlibdir}/rpm
 
-Name:           rpm
-Summary:        The Package Manager
+Name:           librpm-tizen
+Summary:        The RPM libraries for git-buildpackage
 License:        GPL-2.0+
-Group:          Base/Package Management
-Version:        4.11.0.1
+Group:          Development/Tools/Building
+Version:        4.11.0.1.tizen20130618
 Release:        0
 Url:            http://www.rpm.org
 BuildRequires:  binutils
@@ -13,30 +13,29 @@ BuildRequires:  bzip2
 BuildRequires:  file-devel
 BuildRequires:  findutils
 BuildRequires:  gcc
-BuildRequires:  gettext-tools
 BuildRequires:  glibc-devel
 BuildRequires:  gzip
-BuildRequires:  libacl-devel
-BuildRequires:  libattr-devel
-BuildRequires:  pkgconfig(bzip2)
-BuildRequires:  pkgconfig(libcap)
-BuildRequires:  libelf-devel
 BuildRequires:  libtool
-BuildRequires:  pkgconfig(lua)
 BuildRequires:  make
-BuildRequires:  pkgconfig(ncurses)
 BuildRequires:  patch
+%if 0%{?fedora}
+BuildRequires:  popt-devel
+%else
 BuildRequires:  pkgconfig(popt)
-BuildRequires:  xz-devel
+%endif
 BuildRequires:  pkgconfig(zlib)
 BuildRequires:  pkgconfig(nss)
+BuildRequires:  pkg-config
+BuildRequires:  pkgconfig(python) >= 2.6
+# Disable security
+%if 0
 BuildRequires:  uthash-devel
 BuildRequires:  pkgconfig(libxml-2.0)
 BuildRequires:  pkgconfig(libsmack)
+%endif
+%if 0%{?suse_version}
 BuildRequires:  fdupes
-
-Provides:       rpminst
-Provides:       rpm-libs
+%endif
 
 Source1:       db-4.8.30.tar.bz2
 Source2:       db-4.8.30-integration.dif
@@ -50,6 +49,9 @@ Source0:        rpm-%{version}.tar.bz2
 #
 # avoid bootstrapping problem
 %define _binary_payload w9.bzdio
+#
+# Python module name
+%define python_mod_name rpm_tizen
 
 %description
 RPM Package Manager is the main tool for managing the software packages
@@ -60,58 +62,9 @@ is easy to update packages.  RPM keeps track of all these manipulations
 in a central database.	This way it is possible to get an overview of
 all installed packages.  RPM also supports database queries.
 
-%package devel
-Summary:        Include Files and Libraries mandatory for Development
-Requires:       rpm = %{version}
-Requires:       pkgconfig(popt)
-
-%description devel
-This package contains the RPM C library and header files.  These
-development files will simplify the process of writing programs which
-manipulate RPM packages and databases and are intended to make it
-easier to create graphical package managers or any other tools that
-need an intimate knowledge of RPM packages in order to function.
-
-%package build
-Summary:        Tools and Scripts to create rpm packages
-Requires:       rpm = %{version}
-Provides:       rpmbuild rpm:%{_bindir}/rpmbuild
-Requires:       bzip2
-Requires:       xz
-Requires:       gzip
-Requires:       binutils
-Requires:       make
-Requires:       gcc
-Requires:       findutils
-Requires:       patch
-Requires:       glibc-devel
-
-%description build
-If you want to build a rpm, you need this package. It provides rpmbuild
-and requires some packages that are usually required
-
-%package security-plugin
-Summary: MSM security plugin for rpm
-Requires: rpm = %{version}-%{release}
-Requires: smack
-Requires: nss
-
-%description security-plugin
-This package contains the MSM security plugin for rpm that performs
-security-related functionality.
-
-%package -n python-rpm
-Summary: Python Bindings for Manipulating RPM Packages
-Requires:       rpm = %{version}
-BuildRequires:  pkgconfig(python)
-
-%description -n python-rpm
-The python-rpm package contains a module that permits applications
-written in the Python programming language to use the interface
-supplied by RPM Package Manager libraries.
-
-This package should be installed if you want to develop Python programs
-that will manipulate RPM packages and databases.
+This is a special stripped-down version of RPM, only intended to be used by the
+git-buildpackage tool. This package doesn't interfere with the RPM libraries of
+the host system and it only contains rpmlib and rpm-python.
 
 %prep
 %setup -q -n rpm-%{version}
@@ -139,181 +92,48 @@ export LDFLAGS="${LDFLAGS} -Wl,-Bsymbolic-functions -ffunction-sections"
 export CFLAGS="-g -O0 -fno-strict-aliasing -ffunction-sections"
 %endif
 
-%reconfigure \
+autoreconf -i -f
+%configure \
+    --libdir=%{_libdir}/%{name} \
     --disable-dependency-tracking \
-    --with-lua \
-    --with-acl \
-    --with-cap \
+    --without-lua \
+    --without-acl \
+    --without-cap \
     --enable-shared \
     --enable-python \
-    --with-msm 
+    --without-msm \
+    PYTHON_MODULENAME=%{python_mod_name}
 
 make %{?_smp_mflags}
 
 %install
-mkdir -p %{buildroot}%{rpmlibdir}
-mkdir -p %{buildroot}%{_datadir}/locale
-ln -s ../share/locale %{buildroot}%{rpmlibdir}/locale
-%make_install
-install -m 644 db3/db.h %{buildroot}%{_includedir}/rpm
-mkdir -p %{buildroot}%{_sysconfdir}/rpm
-cp -a tizen_macros %{buildroot}%{rpmhome}
-mkdir -p %{buildroot}%{rpmhome}/tizen
-install -m 755 %{SOURCE13} %{buildroot}%{rpmhome}/tizen
-install -m 755 %{SOURCE23} %{buildroot}%{rpmhome}
-install -m 644 %{SOURCE22} %{buildroot}%{_sysconfdir}/device-sec-policy
-install -m 644 %{SOURCE22} %{buildroot}%{__plugindir}/msm-device-sec-policy
-ln -s ../tizen_macros %{buildroot}%{rpmhome}/tizen/macros
-for d in BUILD RPMS SOURCES SPECS SRPMS BUILDROOT ; do
-  mkdir -p %{buildroot}%{_usrsrc}/packages/$d
-  chmod 755 %{buildroot}%{_usrsrc}/packages/$d
-done
-for d in %{buildroot}%{rpmhome}/platform/*-linux/macros ; do
-  dd=${d%%-linux/macros}
-  dd=${dd##*/}
-  mkdir -p %{buildroot}%{_usrsrc}/packages/RPMS/$dd
-  chmod 755 %{buildroot}%{_usrsrc}/packages/RPMS/$dd
-done
-mkdir -p %{buildroot}%{_localstatedir}/lib/rpm
-gzip -9 %{buildroot}%{_mandir}/man[18]/*.[18]
-export RPM_BUILD_ROOT
-chmod 755 doc/manual
-rm -rf doc/manual/Makefile*
-rm -f %{buildroot}%{rpmlibdir}/rpmpopt
-rm -rf %{buildroot}%{_mandir}/{fr,ja,ko,pl,ru,sk}
-rm -f %{buildroot}%{_datadir}/locale/de/LC_MESSAGES/rpm.mo
-rm -f %{buildroot}%{rpmhome}/cpanflute %{buildroot}%{rpmhome}/cpanflute2
-install -m 755 scripts/find-supplements{,.ksyms} %{buildroot}%{rpmhome}
-install -m 755 scripts/firmware.prov %{buildroot}%{rpmhome}
-install -m 755 scripts/debuginfo.prov %{buildroot}%{rpmhome}
-rm -f %{buildroot}%{rpmlibdir}/locale %{buildroot}%{rpmlibdir}/rpmrc
-mkdir -p %{buildroot}%{_sysconfdir}/rpm
-chmod 755 %{buildroot}%{_sysconfdir}/rpm
-mkdir -p %{buildroot}%{rpmhome}/macros.d
-# remove some nonsense or non-working scripts
-pushd %{buildroot}%{rpmhome}/
-for f in rpm2cpio.sh rpm.daily rpmdiff* rpm.log rpm.xinetd freshen.sh u_pkg.sh \
-         magic magic.mgc magic.mime* rpmfile *.pl javadeps brp-redhat \
-         brp-strip-static-archive vpkg-provides*.sh http.req sql.req tcl.req \
-         rpmdb_* brp-sparc64-linux brp-strip-comment-note brp-java-gcjcompile
-do
-    rm -f $f
-done
-for i in %{_datadir}/automake-*/*; do
-  if test -f "$i" && test -f "${i##*/}"; then
-    rm -f "${i##*/}"
-  fi
-done
-popd
-rm -f %{buildroot}%{_libdir}/*.la
-rm -f %{buildroot}%{__plugindir}/*.la
+# Install into a temporary location
+make install DESTDIR="`pwd`/tmp_install"
 
-%fdupes %{buildroot}%{rpmhome}/platform
+# And only copy the files that we want
+install -d %{buildroot}%{_libdir}/%{name}
+install -d %{buildroot}%{python_sitearch}
+cp -ax tmp_install/%{_libdir}/%{name}  %{buildroot}%{_libdir}/
+cp -ax tmp_install/%{python_sitearch}/%{python_mod_name} %{buildroot}%{python_sitearch}/
 
-sh %{buildroot}%{rpmhome}/find-lang.sh %{buildroot} rpm
+# Delete unwanted development files etc.
+find %{buildroot} -name "*.la" | xargs rm -f --
+find %{buildroot}/%{_libdir}/%{name} -name "*.so" | xargs rm -f --
+rm -rf "%{buildroot}%{_libdir}/%{name}/pkgconfig"
+rm -rf "%{buildroot}%{_libdir}/%{name}/rpm-plugins"
 
-%ifarch armv7hl armv7l
-# rpm is using the host_cpu as default for the platform,
-#but armv7hl is not known by the kernel.
-# so we need to enforce the platform here.
-echo -n %{_target_cpu}-tizen-linux-gnueabi > %{buildroot}%{_sysconfdir}/rpm/platform
+# Compile python modules (Fedora does this automatically) and find duplicates
+%if 0%{?suse_version}
+%py_compile %{buildroot}/%{python_sitearch}/%{python_mod_name}/
+%py_compile -O %{buildroot}/%{python_sitearch}/%{python_mod_name}/
+
+%fdupes %{buildroot}/%{python_sitearch}/
 %endif
 
-%post
-/sbin/ldconfig
-test -f %{_dbpath}/Packages || rpm --initdb
-rm -f %{_dbpath}/Filemd5s \
-      %{_dbpath}/Filedigests \
-      %{_dbpath}/Requireversion \
-      %{_dbpath}/Provideversion
-
-%postun
-/sbin/ldconfig
-
 %files
-%manifest %{name}.manifest
-%defattr(-,root,root)
-%license COPYING
-%{_sysconfdir}/rpm
-/bin/rpm
-%{_bindir}/rpm2cpio
-%{_bindir}/rpmdb
-%{_bindir}/rpmkeys
-%{_bindir}/rpmquery
-%{_bindir}/rpmverify
-%{_bindir}/rpmqpack
-%attr(0755, root, root) %dir %{rpmhome}
-%{rpmhome}/macros
-%{rpmhome}/macros.d
-%{rpmhome}/rpmpopt*
-%{rpmhome}/rpmrc
-%{rpmhome}/tizen/macros
-%{rpmhome}/tizen_macros
-%{rpmhome}/rpm.supp
-%{rpmhome}/tgpg
-%{rpmhome}/platform
-%dir    %{__plugindir}
-%{__plugindir}/exec.so
-%{_libdir}/librpm.so.*
-%{_libdir}/librpmio.so.*
-%{_libdir}/librpmbuild.so.*
-%{_libdir}/librpmsign.so.*
-%dir    %{_localstatedir}/lib/rpm
-%dir    %attr(755,root,root) %{_usrsrc}/packages/BUILD
-%dir    %attr(755,root,root) %{_usrsrc}/packages/SPECS
-%dir    %attr(755,root,root) %{_usrsrc}/packages/SOURCES
-%dir    %attr(755,root,root) %{_usrsrc}/packages/SRPMS
-%dir    %attr(755,root,root) %{_usrsrc}/packages/RPMS
-%dir    %attr(755,root,root) %{_usrsrc}/packages/BUILDROOT
-%dir    %attr(755,root,root) %{_usrsrc}/packages/RPMS/*
-
-%files build
-%manifest %{name}.manifest
-%defattr(-,root,root)
-%{_bindir}/rpmbuild
-%{_bindir}/gendiff
-%{_bindir}/rpmspec
-%{_bindir}/rpmsign
-%{rpmhome}/tizen/find-*
-%{rpmhome}/brp-*
-%{rpmhome}/find-supplements*
-%{rpmhome}/check-*
-%{rpmhome}/debugedit
-%{rpmhome}/find-debuginfo.sh
-%{rpmhome}/find-lang.sh
-%{rpmhome}/find-provides.ksyms
-%{rpmhome}/*provides*
-%{rpmhome}/*requires*
-%{rpmhome}/*deps*
-%{rpmhome}/*.prov
-%{rpmhome}/*.req
-%{rpmhome}/macros.*
-%{rpmhome}/fileattrs
-
-%files devel
-%manifest %{name}.manifest
-%defattr(644,root,root,755)
-%attr(755,root,root) %{_bindir}/rpmgraph
-%{_includedir}/rpm
-%{_libdir}/librpm.so
-%{_libdir}/librpmbuild.so
-%{_libdir}/librpmio.so
-%{_libdir}/librpmsign.so
-%{_libdir}/pkgconfig/rpm.pc
-
-%files security-plugin
-%manifest %{name}.manifest
-%defattr(-,root,root)
-%{__plugindir}/msm.so
-%{__plugindir}/msm-device-sec-policy
-%config(noreplace) %{_sysconfdir}/device-sec-policy
-
-%files -n python-rpm
-%defattr(-,root,root)
-%{_libdir}/python*/site-packages/rpm
-%attr(755,root,root) %{_libdir}/python*/site-packages/rpm/transaction.py
-
-%lang_package
-
-%docs_package
-%doc     GROUPS
+%defattr(-,root,root,-)
+%dir %{_libdir}/%{name}
+%dir %{python_sitearch}/%{python_mod_name}/
+%{_libdir}/%{name}/*.so.*
+%{_libdir}/%{name}/rpm
+%{python_sitearch}/%{python_mod_name}/*
