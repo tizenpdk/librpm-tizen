@@ -6,8 +6,8 @@
 %_defaultdocdir         %{_usr}/share/doc/packages
 
 # package build macros
-%make_install           make install DESTDIR=%{?buildroot}
-%makeinstall            make DESTDIR=%{?buildroot:%{buildroot}} install
+# %make_install           make install DESTDIR=%{?buildroot}
+# %makeinstall            make DESTDIR=%{?buildroot:%{buildroot}} install
 %rb_arch                %(echo %{_host_cpu}-linux | sed -e "s/i686/i586/" -e "s/armv5tel/armv4l/" -e "s/hppa2.0/hppa/")
 %rb_ver                 %(/usr/bin/ruby -e 'puts VERSION.sub(/\\\.\\\d$/, "")')
 
@@ -18,35 +18,6 @@
 	%{!?disable_docs_package:/usr/lib/rpm/tizen/find-docs.sh %{buildroot}} \
 %{nil}
 
-# macro: %restart_on_update()
-#	Used to restart a service in postun section, if we are
-#	not running from YaST2 in instsys on update.
-%restart_on_update() \
-	test -n "$FIRST_ARG" || FIRST_ARG=$1 \
-	if test "$FIRST_ARG" -ge 1 ; then \
-	   test -f /etc/sysconfig/services && . /etc/sysconfig/services \
-           if test "$YAST_IS_RUNNING" != "instsys" -a "$DISABLE_RESTART_ON_UPDATE" != yes ; then \
-              for service in %{?*} ; do \
-                 /etc/init.d/$service try-restart > /dev/null || : \
-              done \
-           fi \
-        fi \
-	%nil
-
-# macro: %stop_on_removal()
-#       Used to stop a service in preun section, if we are
-#       not running from YaST2 in instsys on removal of this package.
-%stop_on_removal() \
-        test -n "$FIRST_ARG" || FIRST_ARG=$1 \
-        if test "$FIRST_ARG" = "0" ; then \
-	   test -f /etc/sysconfig/services && . /etc/sysconfig/services \
-           if test "$YAST_IS_RUNNING" != "instsys" -a "$DISABLE_STOP_ON_REMOVAL" != yes ; then \
-              for service in %{?*} ; do \
-                 /etc/init.d/$service stop > /dev/null \
-              done \
-           fi \
-        fi \
-        %nil
 # macro: %configure_kernel_source
 #
 #
@@ -60,9 +31,6 @@
 	fi \
 	%nil
 
-%is_plus %(if test -f /.buildenv ; then source /.buildenv ; if [[ "$BUILD_BASENAME" == *+kde ]] ; then echo 1 ; else echo 0 ; fi ; else echo 0 ; fi)
-
-		
 %install_info(:-:) \
     ALL_ARGS=(%{**}) \
     NUM_ARGS=${#ALL_ARGS[@]} \
@@ -85,13 +53,9 @@
 %supplements_kernel_module() \
     %{expand:%(if ! rpm -q kernel-syms > /dev/null; then echo "%fail Please add the kernel-syms package to BuildRequires"; fi)}
 
-%tizen_version 100
-
 %do_profiling 1
 %cflags_profile_generate -fprofile-generate
 %cflags_profile_feedback -fprofile-use
-
-
 
 
 
@@ -185,7 +149,7 @@
   %{__make} \\\
         DESTDIR=%{?buildroot:%{buildroot}} \\\
         INSTALL_ROOT=%{?buildroot:%{buildroot}} \\\
-  install %* \
+  install  \
   rm -f %{?buildroot:%{buildroot}}%{_infodir}/dir \
   find %{?buildroot:%{buildroot}} -regex ".*\\.la$" | xargs rm -f -- \
   %{!?keepstatic:find %{?buildroot:%{buildroot}} -regex ".*\\.a$" | xargs rm -f --}
@@ -207,6 +171,16 @@ This package provides translations for package %{name}.\
 %defattr(-,root,root,-)\
 %{nil}
 
+%docs_package \
+%package docs \
+Summary: Documentation for package %{name}\
+Group: Documentation\
+AutoReqProv: 0\
+%description docs\
+This package provides documentation for package %{name}.\
+%files docs -f documentation.list\
+%defattr(-,root,root,-)\
+%{nil}
 
 # Bad hack to set $LANG to C during all RPM builds
 %prep \
