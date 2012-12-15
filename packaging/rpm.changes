@@ -1,3 +1,6 @@
+* Sat Dec 15 2012 Anas Nashif <anas.nashif@intel.com> submit/trunk/20121215.171010@735e3f1
+- cleanup macros
+
 * Sat Dec 15 2012 Anas Nashif <anas.nashif@intel.com> rpm-4.11.0-beta1@be4c7d8
 - Update to 4.11 beta1
 
