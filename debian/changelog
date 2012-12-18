@@ -1,0 +1,6 @@
+librpm-tizen (4.10.91.tizen20121215) unstable; urgency=low
+
+  * Initial packaging
+
+ -- Markus Lehtonen <markus.lehtonen@linux.intel.com>  Tue, 17 Dec 2012 13:22:00 +0200
+
