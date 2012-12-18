@@ -1,0 +1,46 @@
+Source: librpm-tizen
+Section: vcs
+Priority: optional
+Build-Depends: debhelper,
+               dpkg-dev,
+               dh-autoreconf,
+               libtool,
+               autoconf,
+               automake,
+               autotools-dev,
+               autopoint,
+               zlib1g-dev,
+               libpopt-dev,
+               libxml2-dev,
+               libreadline-dev,
+               libsqlite3-dev,
+               python-all-dev,
+               pkg-config,
+               libnspr4-dev,
+               libnss3-dev,
+               liblzma-dev,
+               libmagic-dev,
+               libelf-dev,
+               libdw-dev,
+               libdb-dev
+Maintainer: Markus Lehtonen <markus.lehtonen@linux.intel.com>
+Standards-Version: 3.9.3
+Homepage: http://rpm.org/
+X-Python-Version: >= 2.6
+
+Package: librpm-tizen
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
+Description:  The RPM libraries for git-buildpackage
+ RPM Package Manager is the main tool for managing the software packages
+ of Tizen.
+ .
+ RPM can be used to install and remove software packages. With rpm, it
+ is easy to update packages.  RPM keeps track of all these manipulations
+ in a central database.»·This way it is possible to get an overview of
+ all installed packages.  RPM also supports database queries.
+ .
+ This is a special stripped-down version of RPM, only intended to be used by the
+ git-buildpackage tool. Doesn't interfere with the RPM libraries of the host system.
+ This package only contains rpmlib and rpm-python.
+

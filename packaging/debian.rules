@@ -1,0 +1,27 @@
+#!/usr/bin/make -f
+
+python_mod_name := rpm_tizen
+
+CPPFLAGS += $(shell pkg-config --cflags nss)
+
+%:
+	dh $@ --with python2,autoreconf,autotools_dev
+
+override_dh_auto_configure:
+	dh_auto_configure -- --disable-dependency-tracking \
+			--libdir=/usr/lib/librpm-tizen \
+			--without-lua \
+			--without-acl \
+			--without-cap \
+			--enable-shared \
+			--enable-python \
+			--with-external-db \
+			PYTHON_MODULENAME=$(python_mod_name) \
+			CPPFLAGS="$(CPPFLAGS)"
+
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/tmp
+
+override_dh_python2:
+	dh_python2 --no-guessing-versions
+
