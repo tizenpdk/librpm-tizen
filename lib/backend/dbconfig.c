@@ -71,8 +71,10 @@ static const struct poptOption rdbOptions[] = {
 	NULL, NULL },
  { "lockdbfd",	0,POPT_ARG_NONE,	&staticdbi.dbi_lockdbfd, 0,
 	NULL, NULL },
+#ifndef WITH_EXTERNAL_DB
  { "nofsync",	0,POPT_BIT_SET,		&staticdbi.dbi_oflags, DB_NOFSYNC,
 	NULL, NULL },
+#endif
 
     POPT_TABLEEND
 };

@@ -175,7 +175,7 @@ dist_bin_SCRIPTS =	scripts/gendiff
 
 bin_PROGRAMS +=		rpmqpack
 rpmqpack_SOURCES =      rpmqpack.c
-rpmqpack_LDADD =        lib/librpm.la
+rpmqpack_LDADD =        lib/librpm.la @WITH_DB_LIB@
 
 rpmconfig_DATA = rpmrc
 rpmrc: $(top_srcdir)/rpmrc.in
