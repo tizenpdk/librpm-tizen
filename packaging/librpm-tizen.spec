@@ -36,10 +36,9 @@ BuildRequires:  pkgconfig(libsmack)
 %if 0%{?suse_version}
 BuildRequires:  fdupes
 %endif
+BuildRequires:  db-devel
 
 Source0:        rpm-%{version}.tar.bz2
-Source1:       	db-4.8.30.tar.bz2
-Source2:	    db-4.8.30-integration.dif
 Source4:        rpm-tizen_macros
 Source8:        rpmconfigcheck
 Source13:	    find-docs.sh
@@ -70,12 +69,6 @@ This package only contains rpmlib and rpm-python.
 %prep
 %setup -q -n rpm-%{version}
 rm -rf sqlite
-tar xjf %{S:1}
-ln -s db-4.8.30 db
-chmod -R u+w db/*
-# will get linked from db3
-rm -f rpmdb/db.h
-patch -p0 < %{S:2}
 
 if [ -s /etc/rpm/tizen_macros ]; then
 cp -a /etc/rpm/tizen_macros %{SOURCE4}
@@ -104,7 +97,7 @@ BUILDTARGET="--build=%{_target_cpu}-tizen-linux"
 autoreconf -i -f
 ./configure --disable-dependency-tracking --prefix=%{_prefix} --mandir=%{_mandir} --infodir=%{_infodir} \
 --libdir=%{_libdir}/%{name} --sysconfdir=/etc --localstatedir=/var  --without-lua \
---without-acl --without-cap  --enable-shared --enable-python $BUILDTARGET PYTHON_MODULENAME=%{python_mod_name}
+--without-acl --without-cap  --enable-shared --enable-python --with-external-db $BUILDTARGET PYTHON_MODULENAME=%{python_mod_name}
 
 make %{?_smp_mflags}
 
