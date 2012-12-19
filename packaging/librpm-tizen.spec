@@ -36,9 +36,8 @@ BuildRequires:  pkgconfig(libsmack)
 %if 0%{?suse_version}
 BuildRequires:  fdupes
 %endif
+BuildRequires:  db-devel
 
-Source1:       db-4.8.30.tar.bz2
-Source2:       db-4.8.30-integration.dif
 Source4:       rpm-tizen_macros
 Source8:       rpmconfigcheck
 Source13:      find-docs.sh
@@ -70,12 +69,6 @@ the host system and it only contains rpmlib and rpm-python.
 %setup -q -n rpm-%{version}
 cp %{SOURCE1001} .
 rm -rf sqlite
-tar xjf %{S:1}
-ln -s db-4.8.30 db
-chmod -R u+w db/*
-# will get linked from db3
-rm -f rpmdb/db.h
-patch -p0 < %{S:2}
 if [ -s %{_sysconfdir}/rpm/tizen_macros ]; then
     cp -a %{_sysconfdir}/rpm/tizen_macros %{SOURCE4}
 fi
@@ -102,6 +95,7 @@ autoreconf -i -f
     --enable-shared \
     --enable-python \
     --without-msm \
+    --with-external-db \
     PYTHON_MODULENAME=%{python_mod_name}
 
 make %{?_smp_mflags}
