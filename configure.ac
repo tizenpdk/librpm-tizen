@@ -359,6 +359,7 @@ yes )
   ],[
     AC_MSG_ERROR([missing required header db.h])
   ])
+  AC_DEFINE(WITH_EXTERNAL_DB, 1, [Use external db?])
   ;;
 * ) # Fall back to internal db if available
   if [ test -x db/dist/configure ]; then
