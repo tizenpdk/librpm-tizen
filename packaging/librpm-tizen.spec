@@ -38,7 +38,7 @@ BuildRequires:  fdupes
 %endif
 BuildRequires:  db-devel
 
-Source0:        rpm-%{version}.tar.bz2
+Source0:        rpm-%{version}.tar.gz
 Source4:        rpm-tizen_macros
 Source8:        rpmconfigcheck
 Source13:	    find-docs.sh
