@@ -44,7 +44,7 @@ Source13:      find-docs.sh
 Source22:      device-sec-policy
 Source23:      find-provides.ksyms
 Source1001:    rpm.manifest
-Source0:        rpm-%{version}.tar.bz2
+Source0:        rpm-%{version}.tar.gz
 #
 # avoid bootstrapping problem
 %define _binary_payload w9.bzdio
