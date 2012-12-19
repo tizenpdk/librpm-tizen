@@ -34,7 +34,7 @@ License:        GPL-2.0+
 Group:          System/Packages
 Version:        4.10.91.tizen20121215
 Release:        0
-Source0:        rpm-%{version}.tar.bz2
+Source0:        rpm-%{version}.tar.gz
 Source4:        rpm-tizen_macros
 Source5:        rpmsort
 Source6:        symset-table
