@@ -1035,16 +1035,16 @@ int parsePreamble(rpmSpec spec, int initialPackage)
 	    SKIPSPACE(linep);
 	    if (*linep != '\0') {
 		if (findPreambleTag(spec, &tag, &macro, lang)) {
-		    rpmlog(RPMLOG_ERR, _("line %d: Unknown tag: %s\n"),
+		    rpmlog(RPMLOG_INFO, _("line %d: Unknown tag: %s\n"),
 				spec->lineNum, spec->line);
-		    goto exit;
-		}
-		if (handlePreambleTag(spec, pkg, tag, macro, lang)) {
-		    goto exit;
-		}
-		if (spec->BANames && !spec->recursing) {
-		    res = PART_BUILDARCHITECTURES;
-		    goto exit;
+		} else {
+			if (handlePreambleTag(spec, pkg, tag, macro, lang)) {
+			    goto exit;
+			}
+			if (spec->BANames && !spec->recursing) {
+			    res = PART_BUILDARCHITECTURES;
+			    goto exit;
+			}
 		}
 	    }
 	    if ((rc =
