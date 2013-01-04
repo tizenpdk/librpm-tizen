@@ -919,6 +919,7 @@ static struct PreambleRec_s const preambleList[] = {
     {RPMTAG_BUILDSUGGESTS,	0, 0, LEN_AND_STR("buildsuggests")},
     {RPMTAG_BUILDENHANCES,	0, 0, LEN_AND_STR("buildsupplements")},
     {RPMTAG_BUILDENHANCES,	0, 0, LEN_AND_STR("buildenhances")},
+    {RPMTAG_SECMANIFEST,	0, 0, LEN_AND_STR("manifest")},
     {0, 0, 0, 0}
 };
 
