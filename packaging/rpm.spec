@@ -41,8 +41,8 @@ Source4:        rpm-tizen_macros
 Source5:        rpmsort
 Source6:        symset-table
 Source8:        rpmconfigcheck
-Source13:	find-docs.sh
-Source22:	device-sec-policy
+Source13:	    find-docs.sh
+Source22:	    device-sec-policy
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 #
 # avoid bootstrapping problem
@@ -61,8 +61,6 @@ all installed packages.  RPM also supports database queries.
 Summary:        Include Files and Libraries mandatory for Development
 Group:          System/Packages
 Requires:       rpm = %{version}
-# for people confusing the one with the other
-#Recommends:     rpm-build = %{version}
 Requires:       popt-devel
 
 %description devel
@@ -77,7 +75,6 @@ Summary:        Tools and Scripts to create rpm packages
 Group:          System/Packages
 Requires:       rpm = %{version}
 Provides:       rpmbuild rpm:%_bindir/rpmbuild
-# SUSE's build essentials
 Requires:       bzip2
 Requires:       xz
 Requires:       gzip
@@ -209,7 +206,6 @@ for i in /usr/share/automake-*/*; do
   fi
 done
 popd
-gzip -9 CHANGES
 rm -rf %{buildroot}/%{_libdir}/python%{py_ver}
 rm -f %{buildroot}%{_libdir}/*.la
 rm -f %{buildroot}%{_libdir}/rpm-plugins/*.la
@@ -218,7 +214,7 @@ sh %{buildroot}/usr/lib/rpm/find-lang.sh %{buildroot} rpm
 # rpm is using the host_cpu as default for the platform, but armv7hl is not known by the kernel.
 # so we need to enforce the platform here.
 # We don't want to use armv7l because it would make us incompatible to Fedora and MeeGo plattforms.
-echo -n armv7hl-suse-linux> %{buildroot}/etc/rpm/platform
+echo -n armv7hl-tizen-linux> %{buildroot}/etc/rpm/platform
 %endif
 
 %post
