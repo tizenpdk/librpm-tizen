@@ -1,5 +1,5 @@
 Name:           python-rpm
-Version:        4.10.90
+Version:        4.10.91
 Release:        0
 Summary:        Python Bindings for Manipulating RPM Packages
 License:        GPL-2.0+
