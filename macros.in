@@ -1078,6 +1078,12 @@ PreReq: python >= %minver, python < %maxver
 %__collection_sepolicy_flags	1
 
 #------------------------------------------------------------------------------
+# transaction specific macros
+%__transaction_plugins     msm
+%__plugindir		%{_libdir}/rpm-plugins
+%__transaction_msm       %{__plugindir}/msm.so
+
+#------------------------------------------------------------------------------
 # Macros for further automated spec %setup and patch application
 
 # default to plain patch

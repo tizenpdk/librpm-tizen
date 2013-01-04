@@ -314,3 +314,75 @@ rpmRC rpmpluginsCallScriptletPost(rpmPlugins plugins, const char *s_name, int ty
 
     return rc;
 }
+
+rpmRC rpmpluginsCallVerify(rpmPlugins plugins, rpmKeyring keyring, rpmtd sigtd, 
+			    pgpDigParams sig, DIGEST_CTX ctx, int res)
+{
+    rpmRC (*hookFunc)(rpmKeyring, rpmtd, pgpDigParams, DIGEST_CTX, int);
+    int i;
+    rpmRC rc = RPMRC_OK;
+    const char *name = NULL;
+
+    for (i = 0; i < plugins->count; i++) {
+	name = plugins->names[i];
+	RPMPLUGINS_SET_HOOK_FUNC(PLUGINHOOK_VERIFY);
+	if (hookFunc(keyring, sigtd, sig, ctx, res) == RPMRC_FAIL)
+	    rc = RPMRC_FAIL;
+    }
+
+    return rc;
+}
+
+rpmRC rpmpluginsCallFsmInit(rpmPlugins plugins, const char* path,
+                                mode_t mode)
+{
+    rpmRC (*hookFunc)(const char*, mode_t);
+    int i;
+    rpmRC rc = RPMRC_OK;
+    const char *name = NULL;
+
+    for (i = 0; i < plugins->count; i++) {
+        name = plugins->names[i];
+        RPMPLUGINS_SET_HOOK_FUNC(PLUGINHOOK_FSM_INIT);
+        if (hookFunc(path, mode) == RPMRC_FAIL)
+            rc = RPMRC_FAIL;
+    }
+
+    return rc;
+}
+
+rpmRC rpmpluginsCallFsmCommit(rpmPlugins plugins, const char* path,
+                                mode_t mode, int type)
+{
+    rpmRC (*hookFunc)(const char*, mode_t, int);
+    int i;
+    rpmRC rc = RPMRC_OK;
+    const char *name = NULL;
+
+    for (i = 0; i < plugins->count; i++) {
+        name = plugins->names[i];
+        RPMPLUGINS_SET_HOOK_FUNC(PLUGINHOOK_FSM_COMMIT);
+        if (hookFunc(path, mode, type) == RPMRC_FAIL)
+            rc = RPMRC_FAIL;
+    }
+
+    return rc;
+}
+
+rpmRC rpmpluginsCallFileConflict(rpmPlugins plugins, rpmts ts, char* path,
+				Header oldHeader, rpmfi oldFi, int res)
+{
+    rpmRC (*hookFunc)(rpmts, char*, Header, rpmfi, int);
+    int i;
+    rpmRC rc = RPMRC_OK;
+    const char *name = NULL;
+
+    for (i = 0; i < plugins->count; i++) {
+        name = plugins->names[i];
+        RPMPLUGINS_SET_HOOK_FUNC(PLUGINHOOK_FILE_CONFLICT);
+        if (hookFunc(ts, path, oldHeader, oldFi, res) == RPMRC_FAIL)
+            rc = RPMRC_FAIL;
+    }
+
+    return rc;
+}

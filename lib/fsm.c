@@ -23,6 +23,7 @@
 #include "lib/rpmfi_internal.h"	/* XXX fi->apath, ... */
 #include "lib/rpmte_internal.h"	/* XXX rpmfs */
 #include "lib/rpmts_internal.h"	/* rpmtsSELabelFoo() only */
+#include "lib/rpmplugins.h"     /* rpm plugins hooks */
 #include "lib/rpmug.h"
 #include "lib/cpio.h"
 
@@ -108,6 +109,7 @@ struct fsm_s {
     const char * dirName;	/*!< File directory name. */
     const char * baseName;	/*!< File base name. */
     struct selabel_handle *sehandle;	/*!< SELinux label handle (if any). */
+    rpmPlugins plugins;    	/*!< Rpm plugins handle */
 
     unsigned fflags;		/*!< File flags. */
     rpmFileAction action;	/*!< File disposition. */
@@ -1151,9 +1153,10 @@ static int fsmMknod(const char *path, mode_t mode, dev_t dev)
  * Create (if necessary) directories not explicitly included in package.
  * @param dnli		file state machine data
  * @param sehandle	selinux label handle (bah)
+ * @param plugins	rpm plugins handle
  * @return		0 on success
  */
-static int fsmMkdirs(rpmfi fi, rpmfs fs, struct selabel_handle *sehandle)
+static int fsmMkdirs(rpmfi fi, rpmfs fs, struct selabel_handle *sehandle, rpmPlugins plugins)
 {
     DNLI_t dnli = dnlInitIterator(fi, fs, 0);
     struct stat sb;
@@ -1221,6 +1224,10 @@ static int fsmMkdirs(rpmfi fi, rpmfs fs, struct selabel_handle *sehandle)
 			    "%s directory created with perms %04o\n",
 			    dn, (unsigned)(mode & 07777));
 		}
+		if (!rc) {
+		    /* Run file closed hook for all plugins */
+                    rc = rpmpluginsCallFsmCommit(plugins, dn, mode, DIR_TYPE_UNOWNED);
+        	}
 		*te = '/';
 	    }
 	    if (rc)
@@ -1551,6 +1558,10 @@ static int fsmCommit(FSM_t fsm, int ix)
         if (!rc && !getuid()) {
             rc = fsmSetSELabel(fsm->sehandle, fsm->path, fsm->sb.st_mode);
         }
+        /* Call fsm commit hook for all plugins */
+        if (!rc) {
+            rc = rpmpluginsCallFsmCommit(fsm->plugins, fsm->path, fsm->sb.st_mode, DIR_TYPE_NORMAL);
+        }
         if (S_ISLNK(st->st_mode)) {
             if (!rc && !getuid())
                 rc = fsmLChown(fsm->path, fsm->sb.st_uid, fsm->sb.st_gid);
@@ -1640,12 +1651,14 @@ int rpmPackageFilesInstall(rpmts ts, rpmte te, rpmfi fi, FD_t cfd,
 	rc = CPIOERR_INTERNAL;
 
     fsm->sehandle = rpmtsSELabelHandle(ts);
+    fsm->plugins = rpmtsPlugins(ts);
+        
     /* transaction id used for temporary path suffix while installing */
     rasprintf(&fsm->suffix, ";%08x", (unsigned)rpmtsGetTid(ts));
 
     /* Detect and create directories not explicitly in package. */
     if (!rc) {
-	rc = fsmMkdirs(fi, rpmteGetFileStates(te), fsm->sehandle);
+	rc = fsmMkdirs(fi, rpmteGetFileStates(te), fsm->sehandle, fsm->plugins);
     }
 
     while (!rc) {
@@ -1684,6 +1697,15 @@ int rpmPackageFilesInstall(rpmts ts, rpmte te, rpmfi fi, FD_t cfd,
             break;
         }
 
+	/* Run fsm init hook for all plugins */
+        rc = rpmpluginsCallFsmInit(fsm->plugins, fsm->path, fsm->sb.st_mode);
+        
+        /* Exit on error. */
+        if (rc) {
+            fsm->postpone = 1;
+            break;
+        }
+	
 	if (S_ISREG(fsm->sb.st_mode) && fsm->sb.st_nlink > 1)
 	    fsm->postpone = saveHardLink(fsm, &li);
 

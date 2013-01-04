@@ -421,9 +421,16 @@ static void handleInstInstalledFile(const rpmts ts, rpmte p, rpmfi fi, int fx,
 		rState = RPMFILE_STATE_WRONGCOLOR;
 	}
 
+	if (rConflicts) {
+    		char *path = rpmfiFNIndex(fi, fx);
+		/* Call file conflict hook for all plugins */
+		rpmpluginsCallFileConflict(ts->plugins, ts, path, otherHeader, otherFi, rConflicts);
+	}
+	
 	/* Somebody used The Force, lets shut up... */
-	if (rpmtsFilterFlags(ts) & RPMPROB_FILTER_REPLACEOLDFILES)
+	if (rpmtsFilterFlags(ts) & RPMPROB_FILTER_REPLACEOLDFILES) {
 	    rConflicts = 0;
+	}
 
 	if (rConflicts) {
 	    char *altNEVR = headerGetAsString(otherHeader, RPMTAG_NEVRA);

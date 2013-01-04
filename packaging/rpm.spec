@@ -22,12 +22,11 @@ BuildRequires:  pkgconfig(popt)
 BuildRequires:  xz-devel
 BuildRequires:  pkgconfig(zlib)
 BuildRequires:  pkgconfig(nss)
-%if 0%{?enable_security}
 BuildRequires:  uthash-devel
 BuildRequires:  libxml2-devel
 BuildRequires:  libattr-devel
-BuildRequires:  libsmack-devel
-%endif
+BuildRequires:  pkgconfig(libsmack)
+
 
 Provides:       rpminst
 Provides:	rpm-libs
@@ -93,10 +92,8 @@ and requires some packages that are usually required
 Summary: MSM security plugin for rpm
 Group: Development/Libraries
 Requires: rpm = %{version}-%{release}
-Requires: libsmack
+Requires: smack
 Requires: libxml2
-Requires: file
-Requires: uthash
 Requires: nss
 
 %description security-plugin
@@ -141,7 +138,7 @@ BUILDTARGET="--build=%{_target_cpu}-tizen-linux"
 autoreconf -i -f
 ./configure --disable-dependency-tracking --prefix=%{_prefix} --mandir=%{_mandir} --infodir=%{_infodir} \
 --libdir=%{_libdir} --sysconfdir=/etc --localstatedir=/var  --with-lua \
---with-acl --with-cap  --enable-shared %{?with_python: --enable-python} $BUILDTARGET
+--with-acl --with-cap  --enable-shared %{?with_python: --enable-python} --with-msm $BUILDTARGET
 
 make %{?_smp_mflags}
 
@@ -160,9 +157,7 @@ mkdir -p %{buildroot}%{_sysconfdir}/rpm
 cp -a tizen_macros %{buildroot}/usr/lib/rpm
 mkdir -p %{buildroot}/usr/lib/rpm/tizen
 install -m 755 %{SOURCE13} %{buildroot}/usr/lib/rpm/tizen
-%if 0%{?enable_security}
 install -m 644 %{SOURCE22} ${RPM_BUILD_ROOT}%{_sysconfdir}/device-sec-policy
-%endif
 ln -s ../tizen_macros %{buildroot}/usr/lib/rpm/tizen/macros
 for d in BUILD RPMS SOURCES SPECS SRPMS BUILDROOT ; do
   mkdir -p %{buildroot}/usr/src/packages/$d
@@ -291,9 +286,9 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
         %{_libdir}/librpmio.so
         %{_libdir}/librpmsign.so
         %{_libdir}/pkgconfig/rpm.pc
-%if 0%{?enable_security}
+
 %files security-plugin
 %defattr(-,root,root)
 %{_libdir}/rpm-plugins/msm.so
 %config(noreplace) %{_sysconfdir}/device-sec-policy
-%endif
+

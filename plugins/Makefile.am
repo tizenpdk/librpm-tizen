@@ -24,3 +24,10 @@ sepolicy_la_LIBADD = $(top_builddir)/lib/librpm.la $(top_builddir)/rpmio/librpmi
 
 plugins_LTLIBRARIES += sepolicy.la
 endif
+
+if MSM
+msm_la_SOURCES = plugin.h msm.h msm-plugin.c msmconfig.c msmmatch.c msmxattr.c msmmanifest.c
+msm_la_LIBADD = $(top_builddir)/lib/librpm.la $(top_builddir)/rpmio/librpmio.la @WITH_MSM_LIB@
+
+plugins_LTLIBRARIES += msm.la
+endif

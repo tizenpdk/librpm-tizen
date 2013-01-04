@@ -18,6 +18,8 @@
 #include "rpmio/rpmio_internal.h"	/* fd digest bits */
 #include "lib/header_internal.h"	/* XXX headerCheck */
 
+#include "lib/rpmplugins.h"     /* rpm plugins hooks */
+
 #include "debug.h"
 
 static const unsigned int nkeyids_max = 256;
@@ -495,7 +497,7 @@ rpmRC rpmReadHeader(rpmts ts, FD_t fd, Header *hdrp, char ** msg)
     return rc;
 }
 
-static rpmRC rpmpkgRead(rpmKeyring keyring, rpmVSFlags vsflags, 
+static rpmRC rpmpkgRead(rpmPlugins plugins, rpmKeyring keyring, rpmVSFlags vsflags, 
 			FD_t fd, const char * fn, Header * hdrp)
 {
     pgpDigParams sig = NULL;
@@ -646,6 +648,9 @@ static rpmRC rpmpkgRead(rpmKeyring keyring, rpmVSFlags vsflags,
 
     /** @todo Implement disable/enable/warn/error/anal policy. */
     rc = rpmVerifySignature(keyring, &sigtd, sig, ctx, &msg);
+    
+    /* Run verify hook for all plugins */
+    rc = rpmpluginsCallVerify(plugins, keyring, &sigtd, sig, ctx, rc);
 	
     switch (rc) {
     case RPMRC_OK:		/* Signature is OK. */
@@ -714,7 +719,7 @@ rpmRC rpmReadPackageFile(rpmts ts, FD_t fd, const char * fn, Header * hdrp)
     rpmVSFlags vsflags = rpmtsVSFlags(ts);
     rpmKeyring keyring = rpmtsGetKeyring(ts, 1);
 
-    rc = rpmpkgRead(keyring, vsflags, fd, fn, hdrp);
+    rc = rpmpkgRead(rpmtsPlugins(ts), keyring, vsflags, fd, fn, hdrp);
 
     rpmKeyringFree(keyring);
 

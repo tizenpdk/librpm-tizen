@@ -22,10 +22,15 @@ extern "C" {
 
 #define PLUGINHOOK_PSM_PRE_FUNC        pluginhook_psm_pre
 #define PLUGINHOOK_PSM_POST_FUNC        pluginhook_psm_post
+#define PLUGINHOOK_VERIFY_FUNC    pluginhook_verify
 
 #define PLUGINHOOK_SCRIPTLET_PRE_FUNC    pluginhook_scriptlet_pre
 #define PLUGINHOOK_SCRIPTLET_FORK_POST_FUNC    pluginhook_scriptlet_fork_post
 #define PLUGINHOOK_SCRIPTLET_POST_FUNC    pluginhook_scriptlet_post
+
+#define PLUGINHOOK_FSM_INIT_FUNC        pluginhook_fsm_init
+#define PLUGINHOOK_FSM_COMMIT_FUNC        pluginhook_fsm_commit
+#define PLUGINHOOK_FILE_CONFLICT    pluginhook_file_conflict
 
 enum rpmPluginHook_e {
     PLUGINHOOK_NONE		= 0,
@@ -41,8 +46,20 @@ enum rpmPluginHook_e {
     PLUGINHOOK_PSM_POST        = 1 << 9,
     PLUGINHOOK_SCRIPTLET_PRE    = 1 << 10,
     PLUGINHOOK_SCRIPTLET_FORK_POST    = 1 << 11,
-    PLUGINHOOK_SCRIPTLET_POST    = 1 << 12
+    PLUGINHOOK_SCRIPTLET_POST    = 1 << 12,
+    PLUGINHOOK_VERIFY    = 1 << 13,
+    PLUGINHOOK_FSM_INIT    = 1 << 14,
+    PLUGINHOOK_FSM_COMMIT    = 1 << 15,
+    PLUGINHOOK_FILE_CONFLICT    = 1 << 16
+    
 };
+
+/* indicates if a directory is part of rpm package or created by rpm itself */
+typedef enum rpmPluginDirType_e {
+    DIR_TYPE_NONE    = 0,
+    DIR_TYPE_NORMAL    = 1 << 0, 
+    DIR_TYPE_UNOWNED    = 1 << 1
+} rpmPluginDirType;
 
 /* indicates the way the scriptlet is executed */
 typedef enum rpmScriptletExecutionFlow_e {
@@ -206,6 +223,49 @@ rpmRC rpmpluginsCallScriptletForkPost(rpmPlugins plugins, const char *path, int 
  * @return		RPMRC_OK on success, RPMRC_FAIL otherwise
  */
 rpmRC rpmpluginsCallScriptletPost(rpmPlugins plugins, const char *s_name, int type, int res);
+
+/** \ingroup rpmplugins
+ * Call the verify hook
+ * @param plugins	plugins structure
+ * @param keyring	RPM keyring
+ * @param sigtd		signature tag
+ * @param sig		OpenPGP signature parameters
+ * @param res		scriptlet execution result code
+ * @return		RPMRC_OK on success, RPMRC_FAIL otherwise
+ */
+rpmRC rpmpluginsCallVerify(rpmPlugins plugins, rpmKeyring keyring, rpmtd sigtd, 
+			    pgpDigParams sig, DIGEST_CTX ctx, int res);
+
+/** \ingroup rpmplugins
+ * Call the fsm init hook
+ * @param plugins	plugins structure
+ * @param path		file full path
+ * @param mode		file mode
+ * @return		RPMRC_OK on success, RPMRC_FAIL otherwise
+ */
+rpmRC rpmpluginsCallFsmInit(rpmPlugins plugins, const char* path, mode_t mode);
+			    
+/** \ingroup rpmplugins
+ * Call the fsm commit hook
+ * @param plugins	plugins structure
+ * @param path		file full path
+ * @param mode		file mode
+ * @param type		file type
+ * @return		RPMRC_OK on success, RPMRC_FAIL otherwise
+ */
+rpmRC rpmpluginsCallFsmCommit(rpmPlugins plugins, const char* path, mode_t mode, int type);
+
+/** \ingroup rpmplugins
+ * Call the fsm commit hook
+ * @param plugins	plugins structure
+ * @param ts		transaction set
+ * @param path		new file path
+ * @param oldHeader	old header
+ * @param oldFi		old file
+ * @param res           return code
+ * @return		RPMRC_OK on success, RPMRC_FAIL otherwise
+ */
+rpmRC rpmpluginsCallFileConflict(rpmPlugins plugins, rpmts ts, char* path, Header oldHeader, rpmfi oldFi, int res);
 
 #ifdef __cplusplus
 }

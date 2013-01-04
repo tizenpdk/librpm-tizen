@@ -665,6 +665,61 @@ AC_SUBST(WITH_SELINUX_LIB)
 AC_SUBST(WITH_SEMANAGE_LIB)
 AM_CONDITIONAL(SELINUX,[test "$with_selinux" = yes])
 
+
+WITH_MSM_LIB=
+AC_ARG_WITH(msm, [AS_HELP_STRING([--with-msm],[build with msm support])],
+[case "$with_msm" in
+yes|no) ;;
+*) AC_MSG_ERROR([invalid argument to --with-msm])
+  ;;
+esac],
+[with_msm=no])
+
+AS_IF([test "$with_msm" = yes],[
+    save_LIBS="$LIBS"
+    AC_CHECK_LIB([xml2],[xmlReaderForMemory],[],[
+      AC_MSG_ERROR([--with-msm given, but xmlReaderForMemory not found in libxml2])])
+    LIBS="$save_LIBS"
+  AC_CHECK_HEADER([sys/capability.h],[
+    save_LIBS="$LIBS"
+    AC_CHECK_LIB([cap],[cap_set_file],[],[
+      AC_MSG_ERROR([--with-msm given, but cap_set_file not found in libcap])])
+    LIBS="$save_LIBS"
+  ],[
+    AC_MSG_ERROR([--with-msm given, but sys/capability.h not found])
+  ])
+  AC_CHECK_HEADER([attr/xattr.h],[
+    save_LIBS="$LIBS"
+    AC_CHECK_LIB([attr],[setxattr],[],[
+      AC_MSG_ERROR([--with-msm given, but setxattr not found in libattr])])
+    LIBS="$save_LIBS"
+  ],[
+    AC_MSG_ERROR([--with-msm given, but attr/xattr.h not found])
+  ])
+  AC_CHECK_HEADER([uthash.h],[
+    save_LIBS="$LIBS"
+    LIBS="$save_LIBS"
+  ],[
+    AC_MSG_ERROR([--with-msm given, but uthash.h not found])
+  ])
+  AC_CHECK_HEADER([sys/smack.h],[
+     save_LIBS="$LIBS"
+    LIBS="$save_LIBS"
+   ],[
+     AC_MSG_ERROR([--with-msm given, but smack.h not found])
+   ])
+])
+
+AS_IF([test "$with_msm" = yes],[
+  AC_DEFINE(WITH_MSM, 1, [Build with msm support?])
+  WITH_MSM_LIB="`xml2-config --libs` -lcap -lattr -lsmack -lmagic"
+  WITH_MSM_INCLUDE="`xml2-config --cflags`"
+])
+AC_SUBST(WITH_MSM_LIB)
+AC_SUBST(WITH_MSM_INCLUDE)
+AM_CONDITIONAL(MSM,[test "$with_msm" = yes])
+
+
 # libcap
 WITH_CAP_LIB=
 AC_ARG_WITH(cap, [AS_HELP_STRING([--with-cap],[build with capability support])],
