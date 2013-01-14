@@ -1,3 +1,5 @@
+%define rpmhome /usr/lib/rpm
+
 Name:           rpm
 BuildRequires:  binutils
 BuildRequires:  bzip2
@@ -38,8 +40,6 @@ Source0:        rpm-%{version}.tar.bz2
 Source1:       	db-4.8.30.tar.bz2
 Source2:	    db-4.8.30-integration.dif
 Source4:        rpm-tizen_macros
-Source5:        rpmsort
-Source6:        symset-table
 Source8:        rpmconfigcheck
 Source13:	    find-docs.sh
 Source22:	    device-sec-policy
@@ -183,14 +183,13 @@ rm -f %{buildroot}/usr/lib/rpmpopt
 rm -rf %{buildroot}%{_mandir}/{fr,ja,ko,pl,ru,sk}
 rm -f %{buildroot}%{_prefix}/share/locale/de/LC_MESSAGES/rpm.mo
 rm -f %{buildroot}/usr/lib/rpm/cpanflute %{buildroot}/usr/lib/rpm/cpanflute2
-install -m 755 %{SOURCE5} %{buildroot}/usr/lib/rpm
-install -m 755 %{SOURCE6} %{buildroot}/usr/lib/rpm
 install -m 755 scripts/find-supplements{,.ksyms} %{buildroot}/usr/lib/rpm
 install -m 755 scripts/firmware.prov %{buildroot}/usr/lib/rpm
 install -m 755 scripts/debuginfo.prov %{buildroot}/usr/lib/rpm
 rm -f %{buildroot}/usr/lib/locale %{buildroot}/usr/lib/rpmrc
 mkdir -p %{buildroot}/etc/rpm
 chmod 755 %{buildroot}/etc/rpm
+mkdir -p %{buildroot}%{rpmhome}/macros.d
 # remove some nonsense or non-working scripts
 pushd %{buildroot}/usr/lib/rpm/
 for f in rpm2cpio.sh rpm.daily rpmdiff* rpm.log rpm.xinetd freshen.sh u_pkg.sh \
@@ -227,15 +226,27 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 %doc 	COPYING GROUPS
 	/etc/rpm
 	/bin/rpm
-	/usr/bin/*
-        %exclude /usr/bin/rpmbuild
-	/usr/lib/rpm
+%{_bindir}/rpm2cpio
+%{_bindir}/rpmdb
+%{_bindir}/rpmkeys
+%{_bindir}/rpmquery
+%{_bindir}/rpmverify
+%{_bindir}/rpmqpack
+%attr(0755, root, root) %dir %{rpmhome}
+%{rpmhome}/macros
+%{rpmhome}/macros.d
+%{rpmhome}/rpmpopt*
+%{rpmhome}/rpmrc
+%{rpmhome}/tizen/macros
+%{rpmhome}/tizen_macros
+%{rpmhome}/rpm.supp
+%{rpmhome}/tgpg
+%{rpmhome}/platform
+
 %dir 	%{_libdir}/rpm-plugins
 	%{_libdir}/rpm-plugins/exec.so
 	%{_libdir}/librpm.so.*
-	%{_libdir}/librpmbuild.so.*
 	%{_libdir}/librpmio.so.*
-	%{_libdir}/librpmsign.so.*
 %doc	%{_mandir}/man[18]/*.[18]*
 %dir 	/var/lib/rpm
 %dir 	%attr(755,root,root) /usr/src/packages/BUILD
@@ -248,11 +259,33 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 
 %files build
 %defattr(-,root,root)
-/usr/bin/rpmbuild
+%{_bindir}/rpmbuild
+%{_bindir}/gendiff
+%{_bindir}/rpmspec
+%{_bindir}/rpmsign
+
+%{_libdir}/librpmbuild.so.*
+%{_libdir}/librpmsign.so.*
+%{rpmhome}/tizen/find-*
+%{rpmhome}/brp-*
+%{rpmhome}/find-supplements*
+%{rpmhome}/check-*
+%{rpmhome}/debugedit
+%{rpmhome}/find-debuginfo.sh
+%{rpmhome}/find-lang.sh
+%{rpmhome}/*provides*
+%{rpmhome}/*requires*
+%{rpmhome}/*deps*
+%{rpmhome}/*.prov
+%{rpmhome}/*.req
+%{rpmhome}/macros.*
+%{rpmhome}/fileattrs
+
 
 %files devel
 %defattr(644,root,root,755)
-	/usr/include/rpm
+%{_bindir}/rpmgraph
+/usr/include/rpm
         %{_libdir}/librpm.so
         %{_libdir}/librpmbuild.so
         %{_libdir}/librpmio.so
