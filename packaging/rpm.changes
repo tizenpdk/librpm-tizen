@@ -1,3 +1,6 @@
+* Wed Jan 16 2013 Anas Nashif <anas.nashif@intel.com> accepted/trunk/20130114.165627@8999b08
+- Enable security plugin/Smack
+
 * Mon Jan 14 2013 Anas Nashif <anas.nashif@intel.com> accepted/trunk/20121215.193208@ed3861a
 - Move build related files to rpm-build
 
