@@ -152,6 +152,7 @@ rpmRC PLUGINHOOK_INIT_FUNC(rpmts _ts, const char *name, const char *opts)
     if (magic_load(cookie, NULL) != 0) {
    	rpmlog(RPMLOG_ERR, "cannot load magic database - %s\n", magic_error(cookie));	
        magic_close(cookie);
+       cookie = NULL;
        return RPMRC_FAIL;
     }
     
