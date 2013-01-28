@@ -1463,7 +1463,8 @@ static rpmRC rpmtsSetupTransactionPlugins(rpmts ts)
 	    if (rpmpluginsAddPlugin(ts->plugins, "transaction",
 				    (const char*)plugin) == RPMRC_FAIL) {
 		/* any configured plugin failing to load is a failure */
-		rc = RPMRC_FAIL;
+		// temporally make the loading policy relaxed: no failures
+		//rc = RPMRC_FAIL;
 	    }
 	}
 	plugin = strtok(NULL, delims);
