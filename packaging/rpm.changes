@@ -1,3 +1,6 @@
+* Tue Jan 29 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> accepted/trunk/20130119.012137@c917b46
+- Temporally making loading of a configured plugin optional [Elena Reshetova]
+
 * Thu Jan 17 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130117.002510@77a88bd
 - fixing error in cleanup if magic db can't be loaded [Elena Reshetova]
 
