@@ -19,6 +19,10 @@ BuildRequires:  python-devel
 BuildRequires:  xz-devel
 BuildRequires:  zlib-devel
 BuildRequires:  nss-devel
+BuildRequires:  uthash-devel
+BuildRequires:  libxml2-devel
+BuildRequires:  libattr-devel
+BuildRequires:  pkgconfig(libsmack)
 Requires:       rpm = %{version}
 %{expand:%(sed -n -e '/^Source0:/,/^BuildRoot:/p' <%_sourcedir/rpm.spec)}
 %global with_python 2
