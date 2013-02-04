@@ -173,7 +173,7 @@ static int msmSetSmackProvide(struct smack_accesses *smack_accesses, provide_x *
 	if (!sw_source->newer) {
 	    for (ac_domain = provide->ac_domains; ac_domain; ac_domain = ac_domain->prev) {
 		    ac_domain->allowed = msmIsProvideAllowed(ac_domain, sw_source, ac_domain->origin);
-		    rpmlog(RPMLOG_INFO, "%s ac_domain %s provided in %s for %s\n", (ac_domain->allowed ? "allowing" : "not allowing"), 
+		    rpmlog(RPMLOG_DEBUG, "%s ac_domain %s provided in %s for %s\n", (ac_domain->allowed ? "allowing" : "not allowing"), 
 							ac_domain->name, ac_domain->sw_source->name, sw_source->name);
 	    }
 	    if (smack_accesses)
@@ -240,7 +240,7 @@ static int msmSetupZypperRepo(access_x *access, sw_source_x *sw_source)
 	       path, strerror(errno));
 	goto exit;
     }
-    rpmlog(RPMLOG_INFO, "added zypper repository %s for sw source %s\n", 
+    rpmlog(RPMLOG_DEBUG, "added zypper repository %s for sw source %s\n", 
 	   path, sw_source->name);
 
     ret = 0;
@@ -306,7 +306,7 @@ int msmSetupSWSources(struct smack_accesses *smack_accesses, manifest_x *mfx, rp
 	if (ts) {
 	    for (origin = sw_source->origins; origin; origin = origin->prev) {
 		for (keyinfo = origin->keyinfos; keyinfo; keyinfo = keyinfo->prev) {
-		    rpmlog(RPMLOG_INFO, "setting keyinfo for sw source %s\n", 
+		    rpmlog(RPMLOG_DEBUG, "setting keyinfo for sw source %s\n", 
 			   sw_source->name);
 		    rc = rpmtsImportPubkey(ts, keyinfo->keydata, keyinfo->keylen);
 		    if (rc != RPMRC_OK) {
@@ -316,7 +316,7 @@ int msmSetupSWSources(struct smack_accesses *smack_accesses, manifest_x *mfx, rp
 		    }
 		}
 		for (access = origin->accesses; access; access = access->prev) {
-		    rpmlog(RPMLOG_INFO, "setting access %s for sw source %s\n", 
+		    rpmlog(RPMLOG_DEBUG, "setting access %s for sw source %s\n", 
 			   access->data, sw_source->name);
 		    if (origin->type && !strcmp(origin->type, "ZYPPER")) {
 			ret = msmSetupZypperRepo(access, sw_source);
@@ -343,7 +343,7 @@ int msmSetupSWSources(struct smack_accesses *smack_accesses, manifest_x *mfx, rp
 	    for (allow = sw_source->allows; allow; allow = allow->hh.next) {
 		HASH_FIND(hh, all_ac_domains, allow->name, strlen(allow->name), ac_domain);
 		if (ac_domain) {
-		    rpmlog(RPMLOG_INFO, "sw source %s allows access to ac domain %s\n", 
+		    rpmlog(RPMLOG_DEBUG, "sw source %s allows access to ac domain %s\n", 
 			   sw_source->name, allow->name);
 		} else {
 		    rpmlog(RPMLOG_WARNING, "sw source %s allows access to ac domain %s which doesn't exist\n", 
@@ -351,13 +351,13 @@ int msmSetupSWSources(struct smack_accesses *smack_accesses, manifest_x *mfx, rp
 		}
 	    }
 	    for (allow = sw_source->allowmatches; allow; allow = allow->prev)
-		rpmlog(RPMLOG_INFO, "sw source %s allows access to ac domain match %s\n", 
+		rpmlog(RPMLOG_DEBUG, "sw source %s allows access to ac domain match %s\n", 
 		       sw_source->name, allow->match);
 
 	    for (deny = sw_source->denys; deny; deny = deny->hh.next) {
 		HASH_FIND(hh, all_ac_domains, deny->name, strlen(deny->name), ac_domain);
 		if (ac_domain) {
-		    rpmlog(RPMLOG_INFO, "sw source %s denies access to ac domain %s\n", 
+		    rpmlog(RPMLOG_DEBUG, "sw source %s denies access to ac domain %s\n", 
 			   sw_source->name, deny->name);
 		} else {
 		    rpmlog(RPMLOG_WARNING, "sw source %s denies access to ac domain %s which doesn't exist\n", 
@@ -365,7 +365,7 @@ int msmSetupSWSources(struct smack_accesses *smack_accesses, manifest_x *mfx, rp
 		}
 	    }
 	    for (deny = sw_source->denymatches; deny; deny = deny->prev)
-		rpmlog(RPMLOG_INFO, "sw source %s denies access to ac domain match %s\n", 
+		rpmlog(RPMLOG_DEBUG, "sw source %s denies access to ac domain match %s\n", 
 		       sw_source->name, deny->match);
 
 	    if (parent) {
@@ -625,7 +625,7 @@ static int msmSetupDBusConfig(package_x *package, dbus_x *dbus, int phase)
 		   path, strerror(errno));
 	    goto exit;
 	}
-	rpmlog(RPMLOG_INFO, "wrote dbus config %s\n", path);	
+	rpmlog(RPMLOG_DEBUG, "wrote dbus config %s\n", path);	
     }
     ret = 0;
 
@@ -739,7 +739,7 @@ int msmSetupRequests(manifest_x *mfx)
 	
 	// now checking if security policy allows to join this domain
 	if (msmIsRequestAllowed(mfx, defined_ac_domain)) {
-	    rpmlog(RPMLOG_INFO, "Request for a domain name %s is allowed based on package sw source\n", mfx->request->ac_domain);
+	    rpmlog(RPMLOG_DEBUG, "Request for a domain name %s is allowed based on package sw source\n", mfx->request->ac_domain);
 	    return 0;
 		
 	} else {
@@ -767,7 +767,7 @@ static int msmSetupProvides(struct smack_accesses *smack_accesses, package_x *pa
 			HASH_ADD_KEYPTR(hh, all_ac_domains, ac_domain->name, strlen(ac_domain->name), ac_domain);
 			current_d->newer = ac_domain;
 			ac_domain->older = current_d;
-			rpmlog(RPMLOG_INFO, "package %s upgraded ac domain %s\n", ac_domain->pkg_name, ac_domain->name);
+			rpmlog(RPMLOG_DEBUG, "package %s upgraded ac domain %s\n", ac_domain->pkg_name, ac_domain->name);
 		  
 		} else {
 		    rpmlog(RPMLOG_ERR, "package %s can't upgrade ac domain %s previously defined in package %s\n", 
@@ -776,7 +776,7 @@ static int msmSetupProvides(struct smack_accesses *smack_accesses, package_x *pa
 		}
 	    } else {
 		HASH_ADD_KEYPTR(hh, all_ac_domains, ac_domain->name, strlen(ac_domain->name), ac_domain);
-		rpmlog(RPMLOG_INFO, "package %s defined ac domain %s\n", ac_domain->pkg_name, ac_domain->name);		
+		rpmlog(RPMLOG_DEBUG, "package %s defined ac domain %s\n", ac_domain->pkg_name, ac_domain->name);		
 	    }
 	}
 	int ret = msmSetSmackProvide(smack_accesses, provide, package->sw_source);
@@ -1033,7 +1033,7 @@ int msmSetupPackages(struct smack_accesses *smack_accesses, package_x *packages,
 	    if ((strcmp(p_rankkey, c_rankkey) < 0) ||
 		(strcmp(package->sw_source->name, current_p->sw_source->name) == 0)) {
 		HASH_DELETE(hh, allpackages, current_p);
-		rpmlog(RPMLOG_INFO, "sw source %s upgraded package %s previously provided in sw source %s\n", 
+		rpmlog(RPMLOG_DEBUG, "sw source %s upgraded package %s previously provided in sw source %s\n", 
 								package->sw_source->name, package->name, current_p->sw_source->name);
 		current_p->newer = package;
 		package->older = current_p;
@@ -1047,7 +1047,7 @@ int msmSetupPackages(struct smack_accesses *smack_accesses, package_x *packages,
 	    msmFreePointer((void**)&c_rankkey);
 	} else {
 	    if (sw_source) {
-	    rpmlog(RPMLOG_INFO, "sw source %s provided package %s\n", package->sw_source->name, package->name);
+	    rpmlog(RPMLOG_DEBUG, "sw source %s provided package %s\n", package->sw_source->name, package->name);
 	    }
 	}
 	rpmlog(RPMLOG_DEBUG, "before HASH_ADD_KEYPTR\n");
@@ -1209,8 +1209,8 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
 			if (!label) label = mfx->request->ac_domain;
 			if (!exec_label) exec_label = mfx->request->ac_domain;
 		} else {
-			rpmlog(RPMLOG_INFO, "Request for AC domain is empty. Can't identify default file label\n");
-			rpmlog(RPMLOG_INFO, "File will be labelled with the label \"Isolated\"\n");
+			rpmlog(RPMLOG_DEBUG, "Request for AC domain is empty. Can't identify default file label\n");
+			rpmlog(RPMLOG_DEBUG, "File will be labelled with the label \"Isolated\"\n");
 			if (!label) label = isolatedLabel;
 			if (!exec_label) exec_label = isolatedLabel;
 		}
@@ -1219,21 +1219,21 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
 			if (!label) label = mfx->define->name;
 			if (!exec_label) exec_label = mfx->define->name;
 		} else {
-			rpmlog(RPMLOG_INFO, "Define for AC domain is empty. Can't identify default file label\n");
-			rpmlog(RPMLOG_INFO, "File will be labelled with the label \"Isolated\"\n");
+			rpmlog(RPMLOG_DEBUG, "Define for AC domain is empty. Can't identify default file label\n");
+			rpmlog(RPMLOG_DEBUG, "File will be labelled with the label \"Isolated\"\n");
 			if (!label) label = isolatedLabel;
 			if (!exec_label) exec_label = isolatedLabel;
 		}		 
 	     } else { // no request or definition of domain
-			rpmlog(RPMLOG_INFO, "Both define and request sections are empty. Can't identify default file label\n");
-			rpmlog(RPMLOG_INFO, "File will be labelled with the label \"Isolated\"\n");
+			rpmlog(RPMLOG_DEBUG, "Both define and request sections are empty. Can't identify default file label\n");
+			rpmlog(RPMLOG_DEBUG, "File will be labelled with the label \"Isolated\"\n");
 			if (!label) label = isolatedLabel;
 			if (!exec_label) exec_label = isolatedLabel;
 	     }
 	} 
  
 
-	rpmlog(RPMLOG_INFO, "setting SMACK64 %s for %s\n", label, filepath);
+	rpmlog(RPMLOG_DEBUG, "setting SMACK64 %s for %s\n", label, filepath);
 
 	if (lsetxattr(filepath, SMACK64, label, strlen(label), 0) < 0 ) {
 	    rpmlog(RPMLOG_ERR, "Failed to set SMACK64 %s for %s: %s\n", 
@@ -1243,9 +1243,9 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
 	if ((is_executable(filepath, cookie)) == 0) {
 		if ((exec_label) && (strcmp(exec_label, "none") == 0)) {
 			// do not set SMACK64EXEC
-			rpmlog(RPMLOG_INFO, "not setting SMACK64EXEC for %s as requested in manifest\n", filepath);
+			rpmlog(RPMLOG_DEBUG, "not setting SMACK64EXEC for %s as requested in manifest\n", filepath);
 		} else {
-			rpmlog(RPMLOG_INFO, "setting SMACK64EXEC %s for %s\n", exec_label, filepath);
+			rpmlog(RPMLOG_DEBUG, "setting SMACK64EXEC %s for %s\n", exec_label, filepath);
 			if (lsetxattr(filepath, SMACK64EXEC, exec_label, strlen(exec_label), 0) < 0 ) {
 		    		rpmlog(RPMLOG_ERR, "Failed to set SMACK64EXEC %s for %s: %s\n", 
 			   		exec_label, filepath, strerror(errno));
@@ -1256,7 +1256,7 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
 	if (type) { //marked as transmutable
 		if ((lstat(filepath, &st) != -1) && (S_ISDIR(st.st_mode))) { //check that it is a directory
 			char at_true[] = "TRUE";
-			rpmlog(RPMLOG_INFO, "setting SMACK64TRANSMUTE %s for %s\n", at_true, filepath);
+			rpmlog(RPMLOG_DEBUG, "setting SMACK64TRANSMUTE %s for %s\n", at_true, filepath);
 			if ( lsetxattr(filepath, SMACK64TRANSMUTE, at_true, strlen(at_true), 0) < 0 ) {
 			    rpmlog(RPMLOG_ERR, "Failed to set SMACK64TRANSMUTE %s for %s: %s\n", 
 				   at_true, filepath, strerror(errno));
@@ -1306,7 +1306,7 @@ void msmRemoveConfig(manifest_x *mfx)
 	if (!package->older) {
 	    /* set newer to remove from config list */
 	    package->newer = package;
-	    rpmlog(RPMLOG_INFO, "removing package for %s\n", mfx->name);
+	    rpmlog(RPMLOG_DEBUG, "removing package for %s\n", mfx->name);
 	}
     }
 }

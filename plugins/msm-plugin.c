@@ -96,7 +96,7 @@ rpmRC PLUGINHOOK_INIT_FUNC(rpmts _ts, const char *name, const char *opts)
     ts = _ts;
     int res = 0;
 
-    rpmlog(RPMLOG_INFO, "reading device security policy from %s\n", DEVICE_SECURITY_POLICY);
+    rpmlog(RPMLOG_DEBUG, "reading device security policy from %s\n", DEVICE_SECURITY_POLICY);
     root = msmProcessDevSecPolicyXml(DEVICE_SECURITY_POLICY);
 
     if (root) {
@@ -129,7 +129,7 @@ rpmRC PLUGINHOOK_INIT_FUNC(rpmts _ts, const char *name, const char *opts)
     }
 
     if (stat(SMACK_RULES_PATH, &buf) != 0) {
-        rpmlog(RPMLOG_INFO, "A directory for writing smack rules is missing. Creating one.\n");
+        rpmlog(RPMLOG_DEBUG, "A directory for writing smack rules is missing. Creating one.\n");
         mode_t mode = S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IROTH; // 644 -rwer--r--
     	 if (stat(SMACK_RULES_PATH_BEG, &buf) != 0) {
         	if (mkdir(SMACK_RULES_PATH_BEG, mode) != 0) {
@@ -228,7 +228,7 @@ static int findSWSourceBySignature(sw_source_x *sw_source, void *param, void* pa
     for (origin = sw_source->origins; origin; origin = origin->prev) {
 	    for (keyinfo = origin->keyinfos; keyinfo; keyinfo = keyinfo->prev) {
 	        if (pgpPrtParams(keyinfo->keydata, keyinfo->keylen, PGPTAG_PUBLIC_KEY, &key)) {
-	        	rpmlog(RPMLOG_INFO, "invalid sw source key\n");
+	        	rpmlog(RPMLOG_ERR, "invalid sw source key\n");
 		        return -1;
 	        }
 	        if (pgpVerifySignature(key, sig, ctx) == RPMRC_OK) {
@@ -267,14 +267,14 @@ rpmRC PLUGINHOOK_VERIFY_FUNC(rpmKeyring keyring, rpmtd sigtd, pgpDigParams sig, 
 #endif
 
    if (!root) {
-	    rpmlog(RPMLOG_INFO, "No device policy found\n");
+	    rpmlog(RPMLOG_ERR, "No device policy found\n");
 	    rootSWSource = 1; /* accept any signed package as root */
 	    return rpmrc;
    } 
 
     if (rpmrc == RPMRC_NOKEY) {
 	    /* No key, revert to unknown sw source. */
-	    rpmlog(RPMLOG_INFO, "no key for signature, cannot search sw source\n");
+	    rpmlog(RPMLOG_ERR, "no key for signature, cannot search sw source\n");
 	    goto exit;
     }
     if (rpmrc) {
@@ -284,24 +284,24 @@ rpmRC PLUGINHOOK_VERIFY_FUNC(rpmKeyring keyring, rpmtd sigtd, pgpDigParams sig, 
     }
     if (sigtd->tag != RPMSIGTAG_RSA) {
 	    /* Not RSA, revert to unknown sw source. */
-	    rpmlog(RPMLOG_INFO, "no RSA signature, cannot search sw source\n");
+	    rpmlog(RPMLOG_DEBUG, "no RSA signature, cannot search sw source\n");
 	    goto exit;
     }
     current = msmSWSourceTreeTraversal(root->sw_sources, findSWSourceBySignature, sig, ctx);
     if (current)
-	    rpmlog(RPMLOG_INFO, "signature matches sw source %s\n", current->name);
+	    rpmlog(RPMLOG_DEBUG, "signature matches sw source %s\n", current->name);
     else
-	    rpmlog(RPMLOG_INFO, "valid signature but no matching sw source\n");
+	    rpmlog(RPMLOG_DEBUG, "valid signature but no matching sw source\n");
 
  exit:
     if (!current) {
 	    current = msmSWSourceTreeTraversal(root->sw_sources, findSWSourceByName, (void *)"_default_", NULL);
 	    if (current)
-	        rpmlog(RPMLOG_INFO, "using _default_ sw source\n");
+	        rpmlog(RPMLOG_DEBUG, "using _default_ sw source\n");
         else { // for now in case default sw source isn't there yet, allow to think that it is coming from root
         	current = msmSWSourceTreeTraversal(root->sw_sources, findSWSourceByName, (void *)"root", NULL);
 		    if (current)
-		        rpmlog(RPMLOG_INFO, "using _root_ sw source now for testing\n");
+		        rpmlog(RPMLOG_DEBUG, "using _root_ sw source now for testing\n");
 	    }
     }
 
@@ -341,7 +341,7 @@ static packagecontext *msmNew(rpmte te)
     }
 
     ctx->data = xstrdup(rpmtdNextString(&msm));
-    rpmlog(RPMLOG_INFO, "%s manifest b64 data: %.40s...\n", 
+    rpmlog(RPMLOG_DEBUG, "%s manifest b64 data: %.40s...\n", 
 	   rpmteN(ctx->te), ctx->data);
   
  exit2:
@@ -406,7 +406,7 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
         /* this means that verify hook has not been called */
         current = msmSWSourceTreeTraversal(root->sw_sources, findSWSourceByName, (void *)"_default_", NULL);
 	    if (current)
-	        rpmlog(RPMLOG_INFO, "using _default_ sw source\n");
+	        rpmlog(RPMLOG_DEBUG, "using _default_ sw source\n");
         else { 
             rpmlog(RPMLOG_ERR, "Default source isn't availiable. Package source can't be determined. Abort installation\n");
 	        goto fail;
@@ -429,7 +429,7 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
 	        const char *name = headerGetString(h, RPMTAG_SECSWSOURCE);
 	        if (name) { 
 		    current = msmSWSourceTreeTraversal(root->sw_sources, findSWSourceByName, (void *)name, NULL);
-		    rpmlog(RPMLOG_INFO, "removing %s from sw source %s\n",
+		    rpmlog(RPMLOG_DEBUG, "removing %s from sw source %s\n",
 		       rpmteN(ctx->te), name);
 	        }
 	        headerFree(h);
@@ -465,7 +465,7 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
 	        goto fail;
         }
 
-        rpmlog(RPMLOG_INFO, "parsing %s manifest: \n%s", rpmteN(ctx->te), xml);
+        rpmlog(RPMLOG_DEBUG, "parsing %s manifest: \n%s", rpmteN(ctx->te), xml);
         mfx = msmProcessManifestXml(xml, xmllen, current, rpmteN(ctx->te));
 
         if (!mfx) {
@@ -517,7 +517,7 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
 		goto fail;
 	}
 	    
-	rpmlog(RPMLOG_INFO, "adding %s manifest data to system, package_name %s\n", 
+	rpmlog(RPMLOG_DEBUG, "adding %s manifest data to system, package_name %s\n", 
 	           rpmteN(ctx->te), package->name);
 
 	if (msmSetupPackages(ctx->smack_accesses, package, package->sw_source)) {
@@ -600,7 +600,7 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
 
 
 	} else if (rpmteDependsOn(ctx->te)) { /* TR_REMOVED */
-		rpmlog(RPMLOG_INFO, "upgrading package %s by %s\n",
+		rpmlog(RPMLOG_DEBUG, "upgrading package %s by %s\n",
 	       		rpmteNEVR(ctx->te), rpmteNEVR(rpmteDependsOn(ctx->te)));
     	} else if (mfx->sw_sources) {
 		rpmlog(RPMLOG_ERR, "Cannot remove sw source package %s\n",
@@ -655,7 +655,7 @@ rpmRC PLUGINHOOK_FSM_INIT_FUNC(const char* path, mode_t mode)
 		       rpmteN(ctx->te), fc->path, fc->sw_source->name);
 	        return RPMRC_FAIL;
 	    }
-	    rpmlog(RPMLOG_INFO, "%s from %s overwrites %s from %s\n",
+	    rpmlog(RPMLOG_DEBUG, "%s from %s overwrites %s from %s\n",
 	           rpmteN(ctx->te), current->name, fc->path, fc->sw_source->name);
     }
 
@@ -733,10 +733,10 @@ rpmRC PLUGINHOOK_PSM_POST_FUNC(rpmte te, int rpmrc)
     if (rpmteType(ctx->te) == TR_REMOVED) {
 	    if (ctx->mfx->sw_source) {
 	        if (rpmteDependsOn(ctx->te)) {
-		        rpmlog(RPMLOG_INFO, "upgrading %s manifest data\n", 
+		        rpmlog(RPMLOG_DEBUG, "upgrading %s manifest data\n", 
 		           rpmteN(ctx->te));
 	        } else {
-		        rpmlog(RPMLOG_INFO, "removing %s manifest data\n", 
+		        rpmlog(RPMLOG_DEBUG, "removing %s manifest data\n", 
 		           rpmteN(ctx->te));
 	            if (ctx->mfx->define || ctx->mfx->provides || ctx->mfx->sw_sources) {
 		            msmRemoveRules(ctx->smack_accesses, ctx->mfx, SmackEnabled);
@@ -833,7 +833,7 @@ const char *msmQueryPackageFile(const char *rfor,
 		        sw_source = headerGetString(h, RPMTAG_SECSWSOURCE);
 		        if (name && sw_source) {
 		            match = !strncmp(rfor, name, path - rfor - 2);
-		            rpmlog(RPMLOG_INFO, "file %s belongs to package %s in sw source %s %s\n", path, name, sw_source, (match ? "(matched request)" : ""));
+		            rpmlog(RPMLOG_DEBUG, "file %s belongs to package %s in sw source %s %s\n", path, name, sw_source, (match ? "(matched request)" : ""));
 		            if (match) {
 			            *pname = xstrdup(name);
 			            *dname = xstrdup(sw_source);
