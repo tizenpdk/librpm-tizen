@@ -1,3 +1,6 @@
+* Wed Feb 06 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130203.005409@caedd28
+- Move libs back to main package
+
 * Sat Feb 02 2013 Anas Nashif <anas.nashif@intel.com> rpm-4.11.0-release@531803c
 - Update to 4.11.0.1
 
