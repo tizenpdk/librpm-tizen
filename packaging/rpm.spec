@@ -242,6 +242,8 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 	%{_libdir}/rpm-plugins/exec.so
 	%{_libdir}/librpm.so.*
 	%{_libdir}/librpmio.so.*
+    %{_libdir}/librpmbuild.so.*
+    %{_libdir}/librpmsign.so.*
 %doc	%{_mandir}/man[18]/*.[18]*
 %dir 	/var/lib/rpm
 %dir 	%attr(755,root,root) /usr/src/packages/BUILD
@@ -259,8 +261,6 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 %{_bindir}/rpmspec
 %{_bindir}/rpmsign
 
-%{_libdir}/librpmbuild.so.*
-%{_libdir}/librpmsign.so.*
 %{rpmhome}/tizen/find-*
 %{rpmhome}/brp-*
 %{rpmhome}/find-supplements*
