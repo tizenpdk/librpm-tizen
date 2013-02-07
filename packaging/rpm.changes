@@ -1,3 +1,6 @@
+* Wed Feb 06 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130206.154747@e2d13a6
+- Call ldconfig
+
 * Wed Feb 06 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130203.005409@caedd28
 - Move libs back to main package
 
