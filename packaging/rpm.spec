@@ -212,9 +212,12 @@ echo -n armv7hl-tizen-linux> %{buildroot}/etc/rpm/platform
 %endif
 
 %post
+/sbin/ldconfig
 test -f var/lib/rpm/Packages || rpm --initdb
 rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion var/lib/rpm/Provideversion
 
+%postun 
+/sbin/ldconfig
 
 %files -f rpm.lang
 %defattr(-,root,root)
