@@ -27,7 +27,11 @@ BuildRequires:  libsmack-devel
 %if 0%{?suse_version}
 BuildRequires:  fdupes
 %endif
+%if 0%{?fedora}
+BuildRequires:  libdb-devel
+%else
 BuildRequires:  db-devel
+%endif
 
 Summary:        The RPM libraries for git-buildpackage
 License:        GPL-2.0+
