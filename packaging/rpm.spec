@@ -42,6 +42,7 @@ Source8:        rpmconfigcheck
 Source13:	find-docs.sh
 Source22:	device-sec-policy
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+AutoProv:       No
 #
 # avoid bootstrapping problem
 %define _binary_payload w9.bzdio
