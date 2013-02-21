@@ -36,7 +36,11 @@ BuildRequires:  pkgconfig(libsmack)
 %if 0%{?suse_version}
 BuildRequires:  fdupes
 %endif
+%if 0%{?fedora}
+BuildRequires:  libdb-devel
+%else
 BuildRequires:  db-devel
+%endif
 
 Source4:       rpm-tizen_macros
 Source8:       rpmconfigcheck
