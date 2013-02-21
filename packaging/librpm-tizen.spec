@@ -45,6 +45,7 @@ Source22:      device-sec-policy
 Source23:      find-provides.ksyms
 Source1001:    rpm.manifest
 Source0:        rpm-%{version}.tar.gz
+AutoReqProv:    No
 #
 # avoid bootstrapping problem
 %define _binary_payload w9.bzdio
