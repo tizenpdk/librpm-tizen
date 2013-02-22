@@ -297,10 +297,9 @@ int parseScript(rpmSpec spec, int parsePart)
     } else
 #endif
     if (progArgv[0][0] == '<') {
-	rpmlog(RPMLOG_ERR,
+	rpmlog(RPMLOG_INFO,
 		 _("line %d: unsupported internal script: %s\n"),
 		 spec->lineNum, progArgv[0]);
-	goto exit;
     } else {
         (void) addReqProv(pkg->header, RPMTAG_REQUIRENAME,
 		progArgv[0], NULL, (tagflags | RPMSENSE_INTERP), 0);
