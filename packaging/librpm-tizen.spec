@@ -17,7 +17,7 @@ BuildRequires:  gzip
 BuildRequires:  libtool
 BuildRequires:  make
 BuildRequires:  patch
-%if 0%{?fedora}
+%if 0%{?fedora} || 0%{?centos_version}
 BuildRequires:  popt-devel
 %else
 BuildRequires:  pkgconfig(popt)
@@ -25,7 +25,11 @@ BuildRequires:  pkgconfig(popt)
 BuildRequires:  pkgconfig(zlib)
 BuildRequires:  pkgconfig(nss)
 BuildRequires:  pkg-config
+%if 0%{?centos_version}
+BuildRequires:  python-devel
+%else
 BuildRequires:  pkgconfig(python) >= 2.6
+%endif
 # Disable security
 %if 0
 BuildRequires:  uthash-devel
