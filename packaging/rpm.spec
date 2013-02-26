@@ -51,6 +51,8 @@ Source13:	find-docs.sh
 Source22:	device-sec-policy
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 AutoReqProv:    No
+
+Provides:       %{name}-%{version}-tizen20130226
 #
 # avoid bootstrapping problem
 %define _binary_payload w9.bzdio
