@@ -20,6 +20,6 @@ series:
 	@find . -maxdepth 1 -name '0*patch' -print0  | xargs -0 -I{} basename {} | sort > debian.series
 
 clean:
-	@rm -f $(PKG_NAME)*.tar.gz
+	@rm -f $(ORIG_NAME)*.tar.gz
 
 all: clean dsc series
