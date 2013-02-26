@@ -54,6 +54,8 @@ Source22:	    device-sec-policy
 Source23:       find-provides.ksyms
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 AutoReqProv:    No
+
+Provides:       rpm-tizen = %{version}-tizen20130226
 #
 # avoid bootstrapping problem
 %define _binary_payload w9.bzdio
