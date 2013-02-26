@@ -119,6 +119,11 @@ install -d %{buildroot}%{python_sitearch}
 cp -ax tmp_install/%{_libdir}/%{name}  %{buildroot}%{_libdir}/
 cp -ax tmp_install/%{python_sitearch}/%{python_mod_name} %{buildroot}%{python_sitearch}/
 
+# Install extra sources
+install -m644 %{SOURCE4} %{buildroot}%{_libdir}/%{name}/rpm/tizen_macros
+install -d %{buildroot}%{_libdir}/%{name}/rpm/tizen
+ln -s ../tizen_macros %{buildroot}%{_libdir}/%{name}/rpm/tizen/macros
+
 # Delete unwanted development files etc.
 find %{buildroot} -name "*.la" | xargs rm -f --
 find %{buildroot}/%{_libdir}/%{name} -name "*.so" | xargs rm -f --
