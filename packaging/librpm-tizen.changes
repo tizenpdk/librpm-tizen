@@ -1,3 +1,10 @@
+* Wed Feb 27 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 4.10.91.tizen20121215
+- Enable lua
+- update package Provide info
+- Add a provide tag to make gbs depend on new changes
+- packaging: fix Makefile
+- Install Tizen macros
+
 * Mon Feb 25 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 4.10.91.tizen20121215
 - packaging: Disable autoreq, too
 - Ignore unknown internal scripts
