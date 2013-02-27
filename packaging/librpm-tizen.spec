@@ -16,6 +16,11 @@ BuildRequires:  gcc
 BuildRequires:  glibc-devel
 BuildRequires:  gzip
 BuildRequires:  libtool
+%if 0%{?suse_version}
+BuildRequires:  pkgconfig(lua) < 5.2
+%else
+BuildRequires:  lua-devel
+%endif
 BuildRequires:  make
 BuildRequires:  patch
 %if 0%{?fedora} || 0%{?centos_version}
@@ -100,7 +105,7 @@ autoreconf -i -f
 %configure \
     --libdir=%{_libdir}/%{name} \
     --disable-dependency-tracking \
-    --without-lua \
+    --with-lua \
     --without-acl \
     --without-cap \
     --enable-shared \
