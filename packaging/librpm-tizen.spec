@@ -15,6 +15,11 @@ BuildRequires:  gcc
 BuildRequires:  glibc-devel
 BuildRequires:  gzip
 BuildRequires:  libtool
+%if 0%{?suse_version}
+BuildRequires:  pkgconfig(lua) < 5.2
+%else
+BuildRequires:  lua-devel
+%endif
 BuildRequires:  make
 BuildRequires:  patch
 %if 0%{?fedora} || 0%{?centos_version}
@@ -107,7 +112,7 @@ BUILDTARGET="--build=%{_target_cpu}-tizen-linux"
 
 autoreconf -i -f
 ./configure --disable-dependency-tracking --prefix=%{_prefix} --mandir=%{_mandir} --infodir=%{_infodir} \
---libdir=%{_libdir}/%{name} --sysconfdir=/etc --localstatedir=/var  --without-lua \
+--libdir=%{_libdir}/%{name} --sysconfdir=/etc --localstatedir=/var  --with-lua \
 --without-acl --without-cap  --enable-shared --enable-python --with-external-db $BUILDTARGET PYTHON_MODULENAME=%{python_mod_name}
 
 make %{?_smp_mflags}
