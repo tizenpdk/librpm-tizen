@@ -22,7 +22,8 @@ Build-Depends: debhelper,
                libmagic-dev,
                libelf-dev,
                libdw-dev,
-               libdb-dev
+               libdb-dev,
+               liblua5.1-dev
 Maintainer: Markus Lehtonen <markus.lehtonen@linux.intel.com>
 Standards-Version: 3.9.3
 Homepage: http://rpm.org/

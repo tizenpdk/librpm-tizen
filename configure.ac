@@ -729,9 +729,12 @@ AC_ARG_WITH([lua], [AS_HELP_STRING([--with-lua], [build with lua support])],
             [],
             [with_lua=yes])
 
+if test X"$LUA_PKGCONFIG_NAME" = X ; then
+    LUA_PKGCONFIG_NAME=lua
+fi
 AS_IF([test "$with_lua" != no],[
   PKG_CHECK_MODULES([LUA],
-    [lua >= 5.1],
+    [${LUA_PKGCONFIG_NAME} >= 5.1],
     [AC_DEFINE(WITH_LUA, 1, [Build with lua support?])],
     [AC_MSG_ERROR([lua not present (--without-lua to disable)])])
   AC_SUBST(LUA_CFLAGS)

@@ -10,13 +10,14 @@ CPPFLAGS += $(shell pkg-config --cflags nss)
 override_dh_auto_configure:
 	dh_auto_configure -- --disable-dependency-tracking \
 			--libdir=/usr/lib/librpm-tizen \
-			--without-lua \
+			--with-lua \
 			--without-acl \
 			--without-cap \
 			--enable-shared \
 			--enable-python \
 			--with-external-db \
 			PYTHON_MODULENAME=$(python_mod_name) \
+			LUA_PKGCONFIG_NAME=lua5.1 \
 			CPPFLAGS="$(CPPFLAGS)"
 
 override_dh_auto_install:
