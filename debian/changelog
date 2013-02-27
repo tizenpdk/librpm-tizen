@@ -1,5 +1,14 @@
 librpm-tizen (4.10.91.tizen20121215-tizen20130226) unstable; urgency=low
 
+  * Enable lua
+  * Add a provide tag to make gbs depend on new changes
+  * Install Tizen macros
+  * Ignore unknown internal scripts
+
+ -- Markus Lehtonen <markus.lehtonen@linux.intel.com>  Wed, 27 Feb 2013 10:12:00 +0200
+
+librpm-tizen (4.10.91.tizen20121215-tizen20130226) unstable; urgency=low
+
   * Initial packaging
 
  -- Markus Lehtonen <markus.lehtonen@linux.intel.com>  Tue, 17 Dec 2012 13:22:00 +0200
