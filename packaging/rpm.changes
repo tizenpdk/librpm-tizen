@@ -1,3 +1,10 @@
+* Mon Mar 04 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130207.030314@31fe202
+- Fixed package groups
+- add macro no_lang_C
+- update find-lang
+- Call ldconfig
+- Include %{VCS} in rpm -q --info output
+
 * Wed Feb 06 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130206.154747@e2d13a6
 - Call ldconfig
 
