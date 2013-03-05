@@ -1,6 +1,12 @@
 %define rpmhome /usr/lib/rpm
 
 Name:           rpm
+Summary:        The RPM Package Manager
+License:        GPL-2.0+
+Group:          System/Base
+Version:        4.11.0.1
+Release:        0
+Url:            http://www.rpm.org
 BuildRequires:  binutils
 BuildRequires:  bzip2
 BuildRequires:  file-devel
@@ -29,12 +35,7 @@ BuildRequires:  pkgconfig(libsmack)
 
 
 Provides:       rpminst
-Provides:	rpm-libs
-Summary:        The RPM Package Manager
-License:        GPL-2.0+
-Group:          System/Packages
-Version:        4.11.0.1
-Release:        0
+Provides:	    rpm-libs
 Source0:        rpm-%{version}.tar.bz2
 Source1:       	db-4.8.30.tar.bz2
 Source2:	    db-4.8.30-integration.dif
@@ -58,7 +59,7 @@ all installed packages.  RPM also supports database queries.
 
 %package devel
 Summary:        Include Files and Libraries mandatory for Development
-Group:          System/Packages
+Group:          Development/Libraries
 Requires:       rpm = %{version}
 Requires:       popt-devel
 
@@ -71,7 +72,7 @@ need an intimate knowledge of RPM packages in order to function.
 
 %package build
 Summary:        Tools and Scripts to create rpm packages
-Group:          System/Packages
+Group:          Platform Development/Building
 Requires:       rpm = %{version}
 Provides:       rpmbuild rpm:%_bindir/rpmbuild
 Requires:       bzip2
@@ -90,7 +91,7 @@ and requires some packages that are usually required
 
 %package security-plugin
 Summary: MSM security plugin for rpm
-Group: Development/Libraries
+Group:     Security/Access Control 
 Requires: rpm = %{version}-%{release}
 Requires: smack
 Requires: libxml2
