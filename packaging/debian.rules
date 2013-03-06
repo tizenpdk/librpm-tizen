@@ -16,6 +16,7 @@ override_dh_auto_configure:
 			--enable-shared \
 			--enable-python \
 			--with-external-db \
+			--build=${DEB_BUILD_GNU_CPU}-tizen-linux \
 			PYTHON_MODULENAME=$(python_mod_name) \
 			LUA_PKGCONFIG_NAME=lua5.1 \
 			CPPFLAGS="$(CPPFLAGS)"
