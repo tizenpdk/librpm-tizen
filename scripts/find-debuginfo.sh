@@ -95,13 +95,18 @@ debugdir="${RPM_BUILD_ROOT}/usr/lib/debug"
 
 strip_to_debug()
 {
-  local g=
   local r=
   $strip_r && r=--reloc-debug-sections
-  $strip_g && case "$(file -bi "$2")" in
-  application/x-sharedlib*) g=-g ;;
+  case $2 in
+      *.ko)
+	  # don't attempt to create a minimal backtrace binary for
+	  # kernel modules as this just causes the stripping process
+	  # to be skipped entirely
+	  eu-strip --remove-comment $r -f "$1" "$2" || exit
+	  ;;
+      *)
+	  eu-strip --remove-comment -g -f "$1" "$2" || exit
   esac
-  eu-strip --remove-comment $r $g -f "$1" "$2" || exit
   chmod 444 "$1" || exit
 }
 
@@ -267,8 +272,6 @@ while read nlinks inum f; do
   fi
 
   echo "extracting debug info from $f"
-  mode=$(stat -c %a "$f")
-  chmod +w "$f"
   id=$($(DEBUGEDIT=$(which debugedit 2>/dev/null); \
       echo ${DEBUGEDIT:-/usr/lib/rpm/debugedit}) -b "$RPM_BUILD_DIR" \
       -d /usr/src/debug -i -l "$SOURCEFILE" "$f") || exit
@@ -291,25 +294,13 @@ while read nlinks inum f; do
   esac
 
   mkdir -p "${debugdn}"
-  objcopy --only-keep-debug $f $debugfn || :
-  (
-    shopt -s extglob
-    strip_option="--strip-all"
-    case "$f" in
-      *.ko)
-	strip_option="--strip-debug" ;;
-      *$STRIP_KEEP_SYMTAB*)
-	if test -n "$STRIP_KEEP_SYMTAB"; then
-	  strip_option="--strip-debug"
-        fi
-        ;;
-    esac
-    if test "$NO_DEBUGINFO_STRIP_DEBUG" = true ; then
-      strip_option=
-    fi
-    objcopy --add-gnu-debuglink=$debugfn -R .comment -R .GCC.command.line $strip_option $f
-    chmod $mode $f
-  ) || :
+  if test -w "$f"; then
+    strip_to_debug "${debugfn}" "$f"
+  else
+    chmod u+w "$f"
+    strip_to_debug "${debugfn}" "$f"
+    chmod u-w "$f"
+  fi
 
   if [ -n "$id" ]; then
     make_id_link "$id" "$dn/$(basename $f)"
