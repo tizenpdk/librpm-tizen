@@ -1,3 +1,10 @@
+librpm-tizen (4.11.0.1.tizen20130618-tizen20130820) unstable; urgency=low
+
+  * Prevent execution of arbitrary scripts
+  * Bump the log level of "unexpanded script" msg
+
+ -- Markus Lehtonen <markus.lehtonen@linux.intel.com>  Tue, 20 Aug 2013 19:47:53 +0300
+
 librpm-tizen (4.11.0.1.tizen20130618-tizen20130619) unstable; urgency=low
 
   * Version bump to latest from Tizen 3.0
