@@ -1,3 +1,7 @@
+* Tue Aug 20 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 4.11.0.1.tizen20130618
+- Bump the log level of "unexpanded script" msg
+- Prevent execution of arbitrary scripts
+
 * Tue Jun 18 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 4.11.0.1.tizen20130618
 - Version bump to latest from Tizen 3.0
 
