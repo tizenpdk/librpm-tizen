@@ -57,7 +57,7 @@ Source22:	device-sec-policy
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 AutoReqProv:    No
 
-Provides:       %{name} = %{version}-tizen20130226
+Provides:       %{name} = %{version}-tizen20130307
 #
 # avoid bootstrapping problem
 %define _binary_payload w9.bzdio

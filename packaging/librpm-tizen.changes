@@ -1,3 +1,7 @@
+* Thu Mar 07 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 4.10.91.tizen20121215
+- Relax checking of dependency tags
+- debian packaging: configure correct buildtarget, makes Tizen macros available
+
 * Wed Feb 27 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 4.10.91.tizen20121215
 - Enable lua
 - update package Provide info

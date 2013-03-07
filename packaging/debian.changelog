@@ -1,3 +1,10 @@
+librpm-tizen (4.10.91.tizen20121215-tizen20130307) unstable; urgency=low
+
+  * Relax checking of dependency tags
+  * configure correct buildtarget, makes Tizen macros available
+
+ -- Markus Lehtonen <markus.lehtonen@linux.intel.com>  Thu, 07 Mar 2013 08:22:00 +0200
+
 librpm-tizen (4.10.91.tizen20121215-tizen20130226) unstable; urgency=low
 
   * Enable lua
