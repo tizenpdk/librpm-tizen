@@ -1161,6 +1161,7 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
     const char *type = NULL;
     const char isolatedLabel[] = SMACK_ISOLATED_LABEL;
     struct stat st;
+    int execLabeldefined = 0;
 
     if (!filepath) return -1;
     if (mfx->name) {
@@ -1202,6 +1203,7 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
 	return -1;
 
     found:
+    	if (exec_label) execLabeldefined = 1;
 	if ((!label) || (!exec_label)) {
 	    /* no match, use default label of AC domain */
 	    if (mfx->request) { //AC domain is requested in manifest
@@ -1245,10 +1247,13 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
 			// do not set SMACK64EXEC
 			rpmlog(RPMLOG_DEBUG, "not setting SMACK64EXEC for %s as requested in manifest\n", filepath);
 		} else {
-			rpmlog(RPMLOG_DEBUG, "setting SMACK64EXEC %s for %s\n", exec_label, filepath);
-			if (lsetxattr(filepath, SMACK64EXEC, exec_label, strlen(exec_label), 0) < 0 ) {
-		    		rpmlog(RPMLOG_ERR, "Failed to set SMACK64EXEC %s for %s: %s\n", 
-			   		exec_label, filepath, strerror(errno));
+			if ((mfx->package_type && (strcmp(mfx->package_type, "application") == 0))
+ 			|| (execLabeldefined == 1)) {
+				rpmlog(RPMLOG_INFO, "setting SMACK64EXEC %s for %s\n", exec_label, filepath);
+				if (lsetxattr(filepath, SMACK64EXEC, exec_label, strlen(exec_label), 0) < 0 ) {
+		    			rpmlog(RPMLOG_ERR, "Failed to set SMACK64EXEC %s for %s: %s\n", 
+			   			exec_label, filepath, strerror(errno));
+				}
 			}
 		}
 	}

@@ -282,6 +282,7 @@ typedef struct sw_source_x {
 typedef struct manifest_x { /*package manifest */
     struct sw_source_x *sw_source; /* package sw source */
     const char *name; /* package name */
+    const char *package_type; /* package type: system or application */
     struct provide_x *provides; /* assign section */
     struct request_x *request; /* request section */
     struct sw_source_x *sw_sources; /*defined software sources(non-NULL only for configuration manifests)*/

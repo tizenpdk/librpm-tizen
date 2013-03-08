@@ -1069,11 +1069,58 @@ static int msmProcessSWSource(xmlTextReaderPtr reader, sw_source_x *sw_source, c
     return ret;
 }
 
+static int msmProcessAttributes(xmlTextReaderPtr reader, manifest_x *mfx) 
+{
+    const xmlChar *node, *type;
+    int ret, depth, attributePresent = 0;
+
+    rpmlog(RPMLOG_DEBUG, "attributes\n");
+
+    depth = xmlTextReaderDepth(reader);
+
+    while ((ret = msmNextChildElement(reader, depth))) {
+	    node = xmlTextReaderConstName(reader);
+	    if (!node) return -1;
+
+	    if (!strcmp(ASCII(node), "package")) {
+		    if (attributePresent) {
+			rpmlog(RPMLOG_ERR, "Only one attribute is currently allowed per attribute section. Abort installation\n");
+			return -1;
+		    }
+		    attributePresent = 1;
+		    type = xmlTextReaderGetAttribute(reader, XMLCHAR("type"));
+		    rpmlog(RPMLOG_DEBUG, "package type is %s\n", ASCII(type));
+
+		    if (type) {	
+		    
+                	    if ((strcmp(type, "system") != 0) &&
+				(strcmp(type, "application") != 0)){
+				rpmlog(RPMLOG_ERR, "Not allowed attribute name in a package type specification. Abort installation.\n");
+   			    	msmFreePointer((void**)&type);
+			    	return -1; 
+			    }
+
+			    mfx->package_type = ASCII(type);	    
+
+		    } else  {
+			    rpmlog(RPMLOG_ERR, "Type name must be defined. Abort installation\n");
+			    return -1; 
+		    }
+	    } else {
+		rpmlog(RPMLOG_ERR, "Not allowed element in attribute section: %s\n", ASCII(node));
+		return -1;
+	}
+
+	if (ret < 0) return ret;
+    }
+    return ret;
+}
+
 static int msmProcessMsm(xmlTextReaderPtr reader, manifest_x *mfx, sw_source_x *current)
 {
     const xmlChar *node;
     int ret, depth;
-    int assignPresent = 0, requestPresent = 0, definePresent = 0; /* there must be only one section per manifest */
+    int assignPresent = 0, requestPresent = 0, definePresent = 0, attributesPresent = 0; /* there must be only one section per manifest */
     mfx->sw_source = current;
 
     rpmlog(RPMLOG_DEBUG, "manifest\n");
@@ -1094,6 +1141,13 @@ static int msmProcessMsm(xmlTextReaderPtr reader, manifest_x *mfx, sw_source_x *
 			LISTADD(mfx->provides, provide);
 			ret = msmProcessProvide(reader, provide, current, mfx, NULL);
 	    	} else return -1;
+	} else if (!strcmp(ASCII(node), "attributes")) {
+		if (attributesPresent) {
+			rpmlog(RPMLOG_ERR, "A second attribute section in manifest isn't allowed. Abort installation.\n");
+			return -1; 
+		}
+		attributesPresent = 1;
+		ret = msmProcessAttributes(reader, mfx);
 	} else if (!strcmp(ASCII(node), "define")) {
 		if (definePresent) {
 			rpmlog(RPMLOG_ERR, "A second request section in manifest isn't allowed. Abort installation.\n");
