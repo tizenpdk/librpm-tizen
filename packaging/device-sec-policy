@@ -33,6 +33,7 @@ tRrR5cbqmVr8tkFjS/QK6TWfNMM=
     <package name="ac-domain-system">
       <provide>
         <ac_domain name="_" policy="shared"/>
+        <ac_domain name="System" policy="shared"/>
       </provide>
     </package>
     <package name="root"/>
