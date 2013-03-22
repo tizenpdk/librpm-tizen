@@ -3,7 +3,7 @@
 Name:           rpm
 Summary:        The RPM Package Manager
 License:        GPL-2.0+
-Group:          System/Base
+Group:          System/Package Management
 Version:        4.11.0.1
 Release:        0
 Url:            http://www.rpm.org

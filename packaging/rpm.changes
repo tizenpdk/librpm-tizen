@@ -1,3 +1,9 @@
+* Fri Mar 22 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130318.200853@1a584da
+- Fixed package groups
+
+* Mon Mar 18 2013 Anas Nashif <anas.nashif@intel.com> accepted/trunk/20130309.052847@1a584da
+- Adding a new attribute tag to manifest [Elena Reshetova]
+
 * Mon Mar 04 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130207.030314@31fe202
 - Fixed package groups
 - add macro no_lang_C
