@@ -34,6 +34,7 @@ tRrR5cbqmVr8tkFjS/QK6TWfNMM=
       <provide>
         <ac_domain name="_" policy="shared"/>
         <ac_domain name="System" policy="shared"/>
+        <ac_domain name="Isolated"/>
       </provide>
     </package>
     <package name="root"/>
