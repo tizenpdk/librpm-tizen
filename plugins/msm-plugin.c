@@ -123,7 +123,7 @@ rpmRC PLUGINHOOK_INIT_FUNC(rpmts _ts, const char *name, const char *opts)
             return RPMRC_FAIL;
         }
     } else {
-        rpmlog(RPMLOG_INFO, "Smack disabled in kernel. Going to the image build mode. \n");
+        rpmlog(RPMLOG_INFO, "Smackfs isn't mounted at /sys/fs/smackfs/. Going to the image build mode. \n");
         ownSmackLabel = strdup("_");
         SmackEnabled = 0;
     }
