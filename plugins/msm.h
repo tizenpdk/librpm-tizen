@@ -37,7 +37,7 @@
 #define SMACK_RULES_PATH "/etc/smack/accesses.d/"
 #define SMACK_RULES_PATH_BEG "/etc/smack/"
 #define DEVICE_SECURITY_POLICY "/etc/device-sec-policy"
-#define SMACK_LOAD_PATH "/smack/load"
+#define SMACK_LOAD_PATH "/sys/fs/smackfs/load"
 
 #define SMACK_ISOLATED_LABEL "Isolated"
 
