@@ -1,3 +1,11 @@
+* Fri Mar 29 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130322.180734@fcbf4ed
+- find-provides.ksyms added for kernel packages and symbols
+
+* Fri Mar 29 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130322.180734@fcbf4ed
+- init message test [Elena Reshetova]
+- Adding Isolated domain to policy [Elena Reshetova]
+- Changing smack load path [Elena Reshetova]
+
 * Fri Mar 22 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130318.200853@1a584da
 - Fixed package groups
 
