@@ -43,6 +43,7 @@ Source4:        rpm-tizen_macros
 Source8:        rpmconfigcheck
 Source13:	    find-docs.sh
 Source22:	    device-sec-policy
+Source23:       find-provides.ksyms
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 #
 # avoid bootstrapping problem
@@ -158,6 +159,7 @@ mkdir -p %{buildroot}%{_sysconfdir}/rpm
 cp -a tizen_macros %{buildroot}/usr/lib/rpm
 mkdir -p %{buildroot}/usr/lib/rpm/tizen
 install -m 755 %{SOURCE13} %{buildroot}/usr/lib/rpm/tizen
+install -m 755 %{SOURCE23} %{buildroot}/usr/lib/rpm
 install -m 644 %{SOURCE22} ${RPM_BUILD_ROOT}%{_sysconfdir}/device-sec-policy
 ln -s ../tizen_macros %{buildroot}/usr/lib/rpm/tizen/macros
 for d in BUILD RPMS SOURCES SPECS SRPMS BUILDROOT ; do
@@ -272,6 +274,7 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 %{rpmhome}/debugedit
 %{rpmhome}/find-debuginfo.sh
 %{rpmhome}/find-lang.sh
+%{rpmhome}/find-provides.ksyms
 %{rpmhome}/*provides*
 %{rpmhome}/*requires*
 %{rpmhome}/*deps*
