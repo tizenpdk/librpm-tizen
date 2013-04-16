@@ -413,9 +413,10 @@ void msmRemoveRules(struct smack_accesses *smack_accesses, manifest_x *mfx, int 
 
 /** \ingroup msm
  * Setup DBus policies for package
- * @param package	package 
+ * @param package	package
+ * @param mfx		package manifest 
  */
-int msmSetupDBusPolicies(package_x *package);
+int msmSetupDBusPolicies(package_x *package, manifest_x *mfx);
 
 
 /** \ingroup msm

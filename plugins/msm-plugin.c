@@ -580,7 +580,7 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
 		       	}
 	       }
 	       if (package->provides) {
-	        	ret = msmSetupDBusPolicies(package);
+	        	ret = msmSetupDBusPolicies(package, ctx->mfx);
 		        if (ret) {
 		            rpmlog(RPMLOG_ERR, "Setting up dbus policies for %s failed\n",
 			           rpmteN(ctx->te));

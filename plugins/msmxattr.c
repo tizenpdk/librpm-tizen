@@ -50,6 +50,8 @@
 static ac_domain_x *all_ac_domains = NULL; /* hash of all provided ac domains */
 static package_x *allpackages = NULL; /* hash of all installed packages */
 
+static int msmCheckDomainRequestOrPermit(manifest_x *mfx, const char* domain);
+
 void msmFreeInternalHashes(void)
 {
     if (all_ac_domains) {
@@ -415,11 +417,16 @@ static void msmRemoveDBusConfig(package_x *package, dbus_x *dbuss)
     }
 }
 
-static int msmSetupDBusRule(FILE *file, const char *creds, int type, const char *service, const char *name, const char *parentType, const char *parentValue)
+static int msmSetupDBusRule(FILE *file, const char *creds, int type, const char *service, const char *name, const char *parentType, const char *parentValue, manifest_x *mfx)
 {
     char data[1024];
 
     if (creds && *creds) {
+    	// check first that it is of an allowed value
+    	if (msmCheckDomainRequestOrPermit(mfx, creds) != 0) {
+    		rpmlog(RPMLOG_ERR, "The label %s isn't allowed to be accessed by device security policy\n", creds);
+		return -1;
+    	}
 	switch (type) {
 	case DBUS_SERVICE:
 	    snprintf(data, sizeof(data), 
@@ -533,7 +540,7 @@ static int msmSetupDBusRule(FILE *file, const char *creds, int type, const char 
     return 0;
 }
 
-static int msmSetupDBusConfig(package_x *package, dbus_x *dbus, int phase)
+static int msmSetupDBusConfig(package_x *package, dbus_x *dbus, int phase, manifest_x *mfx)
 {
     char path[FILENAME_MAX+1];
     FILE *file = NULL;
@@ -588,30 +595,30 @@ static int msmSetupDBusConfig(package_x *package, dbus_x *dbus, int phase)
 	}
 	if (dbus->annotation) {
 		msmSetupDBusRule(file, dbus->annotation->value, DBUS_SERVICE, 
-				  NULL, dbus->name, NULL, NULL);
+				  NULL, dbus->name, NULL, NULL, mfx);
 	}
 	for (node = dbus->nodes; node; node = node->prev) {
 	    if (node->annotation) {
 		    msmSetupDBusRule(file, node->annotation->value, DBUS_PATH,
-				      dbus->name, node->name, NULL, NULL);
+				      dbus->name, node->name, NULL, NULL, mfx);
 	    }
 	    for (member = node->members; member; member = member->prev) {
 		if (member->annotation) {
 			msmSetupDBusRule(file, member->annotation->value, member->type, 
 					  dbus->name, member->name, 
-					  "path", node->name);
+					  "path", node->name, mfx);
 		}
 	    }
 	    for (interface = node->interfaces; interface; interface = interface->prev) {
 		if (interface->annotation) {
 			msmSetupDBusRule(file, interface->annotation->value, DBUS_INTERFACE, 
-					  dbus->name, interface->name, NULL, NULL);
+					  dbus->name, interface->name, NULL, NULL, mfx);
 		}
 		for (member = interface->members; member; member = member->prev) {
 		    if (member->annotation) {
 			    msmSetupDBusRule(file, member->annotation->value, member->type, 
 					      dbus->name, member->name,
-					      "interface", interface->name);
+					      "interface", interface->name, mfx);
 		    }
 		}
 	    }
@@ -789,7 +796,7 @@ static int msmSetupProvides(struct smack_accesses *smack_accesses, package_x *pa
     return 0;
 }
 
-int msmSetupDBusPolicies(package_x *package) 
+int msmSetupDBusPolicies(package_x *package, manifest_x *mfx) 
 {
 
 	dbus_x *session = NULL;
@@ -800,15 +807,15 @@ int msmSetupDBusPolicies(package_x *package)
     	for (provide = package->provides; provide; provide = provide->prev) {
 		for (dbus = provide->dbuss; dbus; dbus = dbus->prev) {
 			if (!strcmp(dbus->bus, "session")) {
-			    msmSetupDBusConfig(package, dbus, session ? 1 : 0);
+			    msmSetupDBusConfig(package, dbus, session ? 1 : 0, mfx);
 			    session = dbus;
 			} else if (!strcmp(dbus->bus, "system")) {
-			    msmSetupDBusConfig(package, dbus, system ? 1 : 0);
+			    msmSetupDBusConfig(package, dbus, system ? 1 : 0, mfx);
 			    system = dbus;
 			} else return -1;
 		}
-		if (session) msmSetupDBusConfig(package, session, -1);
-		if (system) msmSetupDBusConfig(package, system, -1);
+		if (session) msmSetupDBusConfig(package, session, -1, mfx);
+		if (system) msmSetupDBusConfig(package, system, -1, mfx);
        session = system = NULL;
      	}
 	return 0;
@@ -1203,7 +1210,19 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
 	return -1;
 
     found:
-    	if (exec_label) execLabeldefined = 1;
+   	if (exec_label) {
+   	    	execLabeldefined = 1;
+    		if ((strcmp(exec_label, "none") == 0) 
+    	 	|| (strcmp(exec_label, mfx->request->ac_domain) == 0)
+    	 	|| (strcmp(exec_label, mfx->define->name) == 0)) {
+    			// these labels are allowed
+    		} else {
+    			// ignore all other exec labels, because they aren't allowed for security reasons
+    			exec_label = NULL;
+    			rpmlog(RPMLOG_DEBUG, "It isn't allowed to label the file with smack64label other than ac domain or \"none\" value\n");
+    			rpmlog(RPMLOG_DEBUG, "The default ac domain label will be used instead\n");
+    		}
+    	}	
 	if ((!label) || (!exec_label)) {
 	    /* no match, use default label of AC domain */
 	    if (mfx->request) { //AC domain is requested in manifest
