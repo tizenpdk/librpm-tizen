@@ -42,9 +42,11 @@
 #include <rpm/rpmpgp.h>
 #include <rpm/rpmkeyring.h>
 #include <rpm/rpmdb.h>
+#include <lib/rpmts_internal.h>
 
 #include "rpmio/rpmbase64.h"
 #include "rpmio/rpmlog.h"
+#include "rpm/rpmfileutil.h"
 
 #include "msm.h"
 
@@ -95,27 +97,46 @@ rpmRC PLUGINHOOK_INIT_FUNC(rpmts _ts, const char *name, const char *opts)
 {
     ts = _ts;
     int res = 0;
+    char * fullPath = NULL, * fullPath1 = NULL;
 
-    rpmlog(RPMLOG_DEBUG, "reading device security policy from %s\n", DEVICE_SECURITY_POLICY);
-    root = msmProcessDevSecPolicyXml(DEVICE_SECURITY_POLICY);
+    if (!ts)
+    	return RPMRC_FAIL;
+    
+    fullPath = rpmGenPath(ts->rootDir, DEVICE_SECURITY_POLICY, NULL);
+    rpmlog(RPMLOG_DEBUG, "fullPath %s\n", fullPath);
+    if (!fullPath) {
+        rpmlog(RPMLOG_ERR, "building a full path failed\n");
+    	return RPMRC_FAIL;
+    }
+    		
+    rpmlog(RPMLOG_DEBUG, "reading device security policy from %s\n", fullPath);
+    root = msmProcessDevSecPolicyXml(fullPath);
 
     if (root) {
 	    if (msmSetupSWSources(NULL, root, NULL)) {
 	        rpmlog(RPMLOG_ERR, "Failed to setup device security policy from %s\n", 
-		       DEVICE_SECURITY_POLICY);
+		       fullPath);
 	        return RPMRC_FAIL;
 	    }
     } else {
 	    /* Do not allow plug-in to proceed without security policy existing */
 	    rpmlog(RPMLOG_ERR, "Failed to process sw sources from %s\n", 
-	           DEVICE_SECURITY_POLICY);
+	           fullPath);
 	        return RPMRC_FAIL;
     }
-
+    
+    msmFreePointer((void**)&fullPath);
+    
+    fullPath = rpmGenPath(ts->rootDir, SMACK_LOAD_PATH, NULL);
+    rpmlog(RPMLOG_DEBUG, "fullPath for SMACK_LOAD_PATH %s\n", fullPath);
+    if (!fullPath) {
+        rpmlog(RPMLOG_ERR, "building a full path failed\n");
+    	return RPMRC_FAIL;
+    }
     /* check its own security context and store it for the case when packages without manifest will be installed */
     struct stat buf;
 
-    if (stat(SMACK_LOAD_PATH, &buf) == 0) {
+    if (stat(fullPath, &buf) == 0) {
         res = smack_new_label_from_self(&ownSmackLabel);
         SmackEnabled = 1;
         if (res != 0) {
@@ -123,26 +144,39 @@ rpmRC PLUGINHOOK_INIT_FUNC(rpmts _ts, const char *name, const char *opts)
             return RPMRC_FAIL;
         }
     } else {
-        rpmlog(RPMLOG_INFO, "Smackfs isn't mounted at /sys/fs/smackfs/. Going to the image build mode. \n");
+        rpmlog(RPMLOG_INFO, "Smackfs isn't mounted at %s. Going to the image build mode. \n", fullPath);
         ownSmackLabel = strdup("_");
         SmackEnabled = 0;
     }
 
-    if (stat(SMACK_RULES_PATH, &buf) != 0) {
+    msmFreePointer((void**)&fullPath);    
+    fullPath = rpmGenPath(ts->rootDir, SMACK_RULES_PATH, NULL);
+    fullPath1 = rpmGenPath(ts->rootDir, SMACK_RULES_PATH_BEG, NULL);
+    rpmlog(RPMLOG_DEBUG, "fullPath for SMACK_RULES_PATH %s\n", fullPath);
+    rpmlog(RPMLOG_DEBUG, "fullPath1 for SMACK_RULES_PATH_BEG %s\n", fullPath1);
+    if ((!fullPath) || (!fullPath1)){
+        rpmlog(RPMLOG_ERR, "building a full path failed\n");
+    	return RPMRC_FAIL;
+    }
+    
+    if (stat(fullPath, &buf) != 0) {
         rpmlog(RPMLOG_DEBUG, "A directory for writing smack rules is missing. Creating one.\n");
         mode_t mode = S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IROTH; // 644 -rwer--r--
-    	 if (stat(SMACK_RULES_PATH_BEG, &buf) != 0) {
-        	if (mkdir(SMACK_RULES_PATH_BEG, mode) != 0) {
+    	 if (stat(fullPath1, &buf) != 0) {
+        	if (mkdir(fullPath1, mode) != 0) {
            		rpmlog(RPMLOG_ERR, "Failed to create a sub-directory for smack rules\n");
             		return RPMRC_FAIL;
         	}    
 	 }
-        if (mkdir(SMACK_RULES_PATH, mode) != 0){
+        if (mkdir(fullPath, mode) != 0){
             rpmlog(RPMLOG_ERR, "Failed to create a directory for smack rules\n");
             return RPMRC_FAIL;
         } 
     }
 
+    msmFreePointer((void**)&fullPath);    
+    msmFreePointer((void**)&fullPath1);    
+        
     rpmlog(RPMLOG_DEBUG, "rpm security context: %s\n", ownSmackLabel);
 
     cookie = magic_open(0); 
@@ -213,6 +247,11 @@ rpmRC PLUGINHOOK_FILE_CONFLICT_FUNC(rpmts ts, char* path,
 
 rpmRC PLUGINHOOK_TSM_PRE_FUNC(rpmts ts)
 {
+    if (!root) {
+        rpmlog(RPMLOG_DEBUG, "Policy is missing. Ending transaction\n");
+    	return RPMRC_FAIL;
+    }
+    
     return RPMRC_OK;
 }
 
@@ -223,8 +262,7 @@ static int findSWSourceBySignature(sw_source_x *sw_source, void *param, void* pa
     pgpDigParams sig = (pgpDigParams)param;
     DIGEST_CTX ctx = (DIGEST_CTX)param2;
     pgpDigParams key = NULL;
-    int res = 0;
-    
+     
     for (origin = sw_source->origins; origin; origin = origin->prev) {
 	    for (keyinfo = origin->keyinfos; keyinfo; keyinfo = keyinfo->prev) {
 	        if (pgpPrtParams(keyinfo->keydata, keyinfo->keylen, PGPTAG_PUBLIC_KEY, &key)) {
