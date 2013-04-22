@@ -149,14 +149,14 @@ static void msmHandleProvide(xmlNode *parent, provide_x *provide)
 
     while (provide) {
 	if (provide->ac_domains) {
-		xmlNode *node = xmlNewNode(NULL, BAD_CAST "provide");
-		xmlAddChild(parent, node);
-		msmHandleACDomains(node, CRED_PROVIDE, provide->ac_domains);
-		if (provide->origin) {
-		    xmlNode *childnode = xmlNewNode(NULL, BAD_CAST "for");
-		    xmlNewProp(childnode, BAD_CAST "origin", BAD_CAST provide->origin);
-		    xmlAddChild(node, childnode);
-		}
+            xmlNode *node = xmlNewNode(NULL, BAD_CAST "provide");
+            xmlAddChild(parent, node);
+            msmHandleACDomains(node, CRED_PROVIDE, provide->ac_domains);
+            if (provide->origin) {
+                xmlNode *childnode = xmlNewNode(NULL, BAD_CAST "for");
+                xmlNewProp(childnode, BAD_CAST "origin", BAD_CAST provide->origin);
+                xmlAddChild(node, childnode);
+            }
 	}
         provide = provide->prev;
     }

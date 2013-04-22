@@ -105,7 +105,6 @@
  * These structures represent the parsed security manifest of a package.
  */
 
-
 typedef struct file_x {
     const char *path; /* file path */
     ino_t ino; /* file inode */
@@ -329,7 +328,6 @@ manifest_x* msmFreeManifestXml(manifest_x * mfx);
  */
 int msmSetupSWSources(struct smack_accesses *smack_accesses, manifest_x *mfx, rpmts ts);
 
-
 /** \ingroup msm
  * Create package structure for package being installed.
  * @param name		package name
@@ -418,7 +416,6 @@ void msmRemoveRules(struct smack_accesses *smack_accesses, manifest_x *mfx, int 
  */
 int msmSetupDBusPolicies(package_x *package, manifest_x *mfx);
 
-
 /** \ingroup msm
  * Package is removed, remove related data in device security policy.
  * @param mfx		package manifest
@@ -465,6 +462,5 @@ void msmFreeInternalHashes(void);
  */
 const char *msmQueryPackageFile(const char *rfor, 
 				 const char **sw_sname, const char **pname);
-
 
 #endif
