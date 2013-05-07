@@ -294,12 +294,36 @@ while read nlinks inum f; do
   esac
 
   mkdir -p "${debugdn}"
-  if test -w "$f"; then
-    strip_to_debug "${debugfn}" "$f"
+  if [ -e "${BUILDDIR}/Kconfig" ] ; then
+      mode=$(stat -c %a "$f")
+      chmod +w "$f"
+      objcopy --only-keep-debug $f $debugfn || :
+      (
+	  shopt -s extglob
+	  strip_option="--strip-all"
+	  case "$f" in
+	      *.ko)
+		  strip_option="--strip-debug" ;;
+	      *$STRIP_KEEP_SYMTAB*)
+		  if test -n "$STRIP_KEEP_SYMTAB"; then
+		      strip_option="--strip-debug"
+		  fi
+		  ;;
+	  esac
+	  if test "$NO_DEBUGINFO_STRIP_DEBUG" = true ; then
+	      strip_option=
+	  fi
+	  objcopy --add-gnu-debuglink=$debugfn -R .comment -R .GCC.command.line $strip_option $f
+	  chmod $mode $f
+      ) || :
   else
-    chmod u+w "$f"
-    strip_to_debug "${debugfn}" "$f"
-    chmod u-w "$f"
+      if test -w "$f"; then
+	  strip_to_debug "${debugfn}" "$f"
+      else
+	  chmod u+w "$f"
+	  strip_to_debug "${debugfn}" "$f"
+	  chmod u-w "$f"
+      fi
   fi
 
   if [ -n "$id" ]; then
