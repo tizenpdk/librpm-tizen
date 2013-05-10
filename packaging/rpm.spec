@@ -224,7 +224,8 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 
 %files -f rpm.lang
 %defattr(-,root,root)
-%doc 	COPYING GROUPS
+%doc 	GROUPS
+%license COPYING
 	/etc/rpm
 	/bin/rpm
 %{_bindir}/rpm2cpio
