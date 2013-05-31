@@ -720,7 +720,11 @@ int msmSetupRequests(manifest_x *mfx)
     HASH_FIND(hh, all_ac_domains, mfx->request->ac_domain, strlen(mfx->request->ac_domain), defined_ac_domain);
     if (!defined_ac_domain){ // request for a undefined domain. 
         rpmlog(RPMLOG_ERR, "Request for a domain name %s that hasn't been yet defined by any package\n", mfx->request->ac_domain);
+#ifdef ENABLE_DCHECKS
         return -1;
+#else
+        return 0;
+#endif
     }
     //now check that the package can join the requested AC domain
     if (mfx->define){
@@ -730,15 +734,24 @@ int msmSetupRequests(manifest_x *mfx)
             return 0;		
     } 
     //need to check if developer allowed other packages to join this domain
-    if (msmCheckDomainJoinPossibility(mfx, defined_ac_domain) < 0 )
-        return -1;	
+    if (msmCheckDomainJoinPossibility(mfx, defined_ac_domain) < 0) {
+#ifdef ENABLE_DCHECKS
+        return -1;
+#else
+        return 0;
+#endif
+    }
     // now checking if security policy allows to join this domain
     if (msmIsRequestAllowed(mfx, defined_ac_domain)) {
         rpmlog(RPMLOG_DEBUG, "Request for a domain name %s is allowed based on package sw source\n", mfx->request->ac_domain);
         return 0;		
     } else {
         rpmlog(RPMLOG_ERR, "Request for a domain name %s isn't allowed based on package sw source\n", mfx->request->ac_domain);
+#ifdef ENABLE_DCHECKS
         return -1;
+#else
+        return 0;
+#endif
     }
 }
 
@@ -875,8 +888,11 @@ int msmSetupDefine(struct smack_accesses *smack_accesses, manifest_x *mfx)
     if (mfx->define->d_requests) {
         for (d_request = mfx->define->d_requests; d_request; d_request = d_request->prev) {
             // first check if the current's package sw source can grant access to requested domain
-            if (msmCheckDomainRequestOrPermit(mfx, d_request->label_name) < 0)
+            if (msmCheckDomainRequestOrPermit(mfx, d_request->label_name) < 0) {
+#ifdef ENABLE_DCHECKS
                 return -1;
+#endif
+            }
             if (smack_accesses_add(smack_accesses, mfx->define->name, d_request->label_name, d_request->ac_type) < 0) {
                 rpmlog(RPMLOG_ERR, "Failed to set smack rules for domain requests\n");
                 return -1;
@@ -887,13 +903,19 @@ int msmSetupDefine(struct smack_accesses *smack_accesses, manifest_x *mfx)
     if (mfx->define->d_permits) {
         for (d_permit = mfx->define->d_permits; d_permit; d_permit = d_permit->prev) {
             // first check if the current's package sw source can grant access to permited domain
-            if (msmCheckDomainRequestOrPermit(mfx, d_permit->label_name) < 0)
+            if (msmCheckDomainRequestOrPermit(mfx, d_permit->label_name) < 0) {
+#ifdef ENABLE_DCHECKS
                 return -1;
+#endif
+            }
             if (!d_permit->to_label_name)
                 ret = smack_accesses_add(smack_accesses, d_permit->label_name, mfx->define->name, d_permit->ac_type);
             else {
-                if (msmCheckLabelProvisioning(mfx, d_permit->to_label_name) < 0)
+                if (msmCheckLabelProvisioning(mfx, d_permit->to_label_name) < 0) {
+#ifdef ENABLE_DCHECKS
                     return -1;
+#endif
+                }
                 ret = smack_accesses_add(smack_accesses, d_permit->label_name, d_permit->to_label_name, d_permit->ac_type);
             }
             if (ret < 0) {
