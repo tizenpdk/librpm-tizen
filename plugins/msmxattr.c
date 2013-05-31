@@ -1153,7 +1153,8 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
                     goto found;
                 }
                 len = strlen(filesystem->path);
-                rpmlog(RPMLOG_DEBUG, "filesystem->path: %s, length %d\n", filesystem->path, len);
+                rpmlog(RPMLOG_DEBUG, "filepath: %s, filesystem->type %s\n", filepath, filesystem->type);
+                rpmlog(RPMLOG_DEBUG, "filesystem->path: %s, length %d, match %d\n", filesystem->path, len, match);
                 rpmlog(RPMLOG_DEBUG, "filesystem->path + len - 1: %s\n", filesystem->path + len - 1);
                 if (len > match) {
                     if ((!strncmp(filepath, filesystem->path, len)) && (filesystem->type)) {
@@ -1180,8 +1181,8 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
     if (exec_label) {
         execLabeldefined = 1;
         if ((strcmp(exec_label, "none") == 0) 
-            || (strcmp(exec_label, mfx->request->ac_domain) == 0)
-            || (strcmp(exec_label, mfx->define->name) == 0)) {
+            || ( (mfx->request) && (mfx->request->ac_domain) && (strcmp(exec_label, mfx->request->ac_domain) == 0))
+            || ( (mfx->define) &&  (mfx->define->name) && (strcmp(exec_label, mfx->define->name) == 0))) {
             // these labels are allowed
         } else {
             // ignore all other exec labels, because they aren't allowed for security reasons
