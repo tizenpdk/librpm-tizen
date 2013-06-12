@@ -4,6 +4,8 @@
 %_sysconfdir            /etc
 %_localstatedir         /var
 %_defaultdocdir         %{_usr}/share/doc/packages
+%_unitdir_user /usr/lib/systemd/user
+%_unitdir /usr/lib/systemd/system
 
 # package build macros
 # %make_install           make install DESTDIR=%{?buildroot}
@@ -268,3 +270,34 @@ rm -rf %{?buildroot:%{buildroot}} \
   find %{?buildroot:%{buildroot}} -regex ".*/man/man./.*\.[0-9]" | xargs rm -f -- \
   find %{?buildroot:%{buildroot}} -regex ".*/man/../man./.*\.[0-9]" | xargs rm -f -- \
   find %{?buildroot:%{buildroot}} -regex ".*/man/man./.*\.[0-9]pm" | xargs rm -f --
+
+
+%install_service() \
+mkdir -p %{buildroot}/%{_unitdir}/%{1} \
+ln -s ../%{2}  %{buildroot}/%{_unitdir}/%{1}/%{2}  \
+%{nil}
+
+
+%_fontsdir               %{_usr}/share/fonts
+%_ttfontsdir             %{_fontsdir}/truetype
+%_miscfontsdir           %{_fontsdir}/misc
+%_fontsconfdir           %{_sysconfdir}/fonts
+%_fontsconfddir          %{_fontsconfdir}/conf.d
+%_fontsconfavaildir      %{_datadir}/%{name}/conf.avail
+
+%devel_package \
+%package devel \
+Summary: Development files for package %{name}\
+Group: Development\
+%description devel\
+This package provides header files and other developer releated files for package %{name}.\
+%files devel \
+%{_includedir}/*\
+%{_libdir}/pkgconfig/*.pc\
+%{_libdir}/*.so\
+%{nil}
+
+%devel_desc This package contains all necessary include files and libraries needed \
+to develop applications that require %{name}.\
+%{nil}
+
