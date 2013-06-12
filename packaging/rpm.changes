@@ -1,3 +1,15 @@
+* Wed Jun 12 2013 Anas Nashif <anas.nashif@intel.com> accepted/tizen/20130520.094313@a3c78e0
+- update macros from project conf
+- Security plugin: Adding configuration option --disable-dchecks
+- Security-plugin: Fix the null pointer comparison  possibility in msmXattrSupport
+- Set license using %license
+- Fix 32bit kernel builds by not using eu-strip
+- Cleaning up code identation
+- Fix the missing path prefix for Plugin init hook
+- Fixes to rpm security plugin  - stricter control over smack64exec label assigment  - strciter control over dbus interface labels
+- Add VCS tag into .src.rpm
+- add find-provides.ksyms
+
 * Fri Mar 29 2013 Anas Nashif <anas.nashif@intel.com> submit/trunk/20130322.180734@fcbf4ed
 - find-provides.ksyms added for kernel packages and symbols
 
