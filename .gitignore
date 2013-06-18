@@ -76,3 +76,5 @@ Makefile.in.in
 /scripts/macros.python
 /stamp-h1
 /tests/atconfig
+/obs
+/rpmbuild
