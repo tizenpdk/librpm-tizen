@@ -516,6 +516,11 @@ int rpmluaRunScript(rpmlua _lua, const char *script, const char *name)
     INITSTATE(_lua, lua);
     lua_State *L = lua->L;
     int ret = 0;
+#define LUA_OUTPUT "UNEXPANDEDLUASCRIPT"
+    rpmlog(RPMLOG_INFO, _("Refusing to run lua code: %s\n"), script);
+    lua->printbuf->buf = xcalloc(1, sizeof(LUA_OUTPUT));
+    strcpy(lua->printbuf->buf, LUA_OUTPUT);
+#if 0
     if (name == NULL)
 	name = "<lua>";
     if (luaL_loadbuffer(L, script, strlen(script), name) != 0) {
@@ -529,6 +534,7 @@ int rpmluaRunScript(rpmlua _lua, const char *script, const char *name)
 	lua_pop(L, 1);
 	ret = -1;
     }
+#endif
     return ret;
 }
 
