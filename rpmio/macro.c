@@ -472,6 +472,9 @@ doShellEscape(MacroBuf mb, const char * cmd, size_t clen)
     int rc = 0;
     int c;
 
+    rpmlog(RPMLOG_INFO, _("Refusing to run shell code: %s\n"), cmd);
+    mbAppendStr(mb, "UNEXPANDEDSHELLSCRIPT");
+#if 0
     rc = expandThis(mb, cmd, clen, &buf);
     if (rc)
 	goto exit;
@@ -493,6 +496,7 @@ doShellEscape(MacroBuf mb, const char * cmd, size_t clen)
 
 exit:
     _free(buf);
+#endif
     return rc;
 }
 
