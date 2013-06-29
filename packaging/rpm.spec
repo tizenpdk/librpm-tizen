@@ -44,6 +44,7 @@ Source8:        rpmconfigcheck
 Source13:	    find-docs.sh
 Source22:	    device-sec-policy
 Source23:       find-provides.ksyms
+Source1001: 	rpm.manifest
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 #
 # avoid bootstrapping problem
@@ -105,6 +106,7 @@ security-related functionality.
 
 %prep
 %setup -q -n rpm-%{version}
+cp %{SOURCE1001} .
 rm -rf sqlite
 tar xjf %{S:1}
 ln -s db-4.8.30 db
@@ -223,6 +225,7 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 /sbin/ldconfig
 
 %files -f rpm.lang
+%manifest %{name}.manifest
 %defattr(-,root,root)
 %doc 	GROUPS
 %license COPYING
@@ -262,6 +265,7 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 %dir	%attr(755,root,root) /usr/src/packages/RPMS/*
 
 %files build
+%manifest %{name}.manifest
 %defattr(-,root,root)
 %{_bindir}/rpmbuild
 %{_bindir}/gendiff
@@ -286,6 +290,7 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 
 
 %files devel
+%manifest %{name}.manifest
 %defattr(644,root,root,755)
 %{_bindir}/rpmgraph
 /usr/include/rpm
@@ -296,6 +301,7 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
         %{_libdir}/pkgconfig/rpm.pc
 
 %files security-plugin
+%manifest %{name}.manifest
 %defattr(-,root,root)
 %{_libdir}/rpm-plugins/msm.so
 %config(noreplace) %{_sysconfdir}/device-sec-policy
