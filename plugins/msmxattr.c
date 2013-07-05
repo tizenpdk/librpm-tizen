@@ -101,12 +101,15 @@ static int msmCheckLabelProvisioning(manifest_x *mfx, const char* label)
 {
 
     d_provide_x *provide = NULL;
+    define_x *define = NULL;
 
-    if ((mfx) && (label) && (mfx->define) && (mfx->define->d_provides)) {
-        for (provide = mfx->define->d_provides; provide; provide = provide->prev) {
-            if (strcmp(provide->label_name, label) == 0)
-                return 0;
-        }
+    if ((mfx) && (label) && (mfx->defines)) {
+        for (define = mfx->defines; define; define = define->prev) {
+	    for (provide = define->d_provides; provide; provide = provide->prev) {
+		if (strcmp(provide->label_name, label) == 0)
+                    return 0;
+	    }
+	}
     }
     rpmlog(RPMLOG_ERR, "Label %s hasn't been provided in the manifest\n", label);
     return -1;
@@ -713,6 +716,7 @@ static int msmCheckDomainJoinPossibility(manifest_x *mfx, ac_domain_x *defined_a
 int msmSetupRequests(manifest_x *mfx) 
 {
     ac_domain_x *defined_ac_domain = NULL; 
+    define_x *define = NULL;
 
     if ((!mfx) || (!mfx->request) || (!mfx->request->ac_domain))
         return -1;
@@ -727,11 +731,15 @@ int msmSetupRequests(manifest_x *mfx)
 #endif
     }
     //now check that the package can join the requested AC domain
-    if (mfx->define){
-        rpmlog(RPMLOG_DEBUG, "mfx->define->name %s mfx->request->ac_domain %s\n", mfx->define->name, mfx->request->ac_domain);
-        if (strcmp(mfx->define->name, mfx->request->ac_domain) == 0)
-            //ac domain is requested from the same package where it was define. This case is always allowed
-            return 0;		
+    if (mfx->defines){
+        LISTHEAD(mfx->defines, define);
+        while(define) {
+            rpmlog(RPMLOG_DEBUG, "define->name %s mfx->request->ac_domain %s\n", define->name, mfx->request->ac_domain);
+            if (strcmp(define->name, mfx->request->ac_domain) == 0)
+                //ac domain is requested from the same package where it was define. This case is always allowed
+                return 0;
+            define = define->next;
+        }		
     } 
     //need to check if developer allowed other packages to join this domain
     if (msmCheckDomainJoinPossibility(mfx, defined_ac_domain) < 0) {
@@ -819,6 +827,7 @@ int msmSetupDBusPolicies(package_x *package, manifest_x *mfx)
 static int msmCheckDomainRequestOrPermit(manifest_x *mfx, const char* domain) 
 {
     ac_domain_x *defined_ac_domain = NULL; 
+    define_x *define = NULL;
     char* name = NULL;
 
     if ((!mfx) || (!domain))
@@ -838,14 +847,18 @@ static int msmCheckDomainRequestOrPermit(manifest_x *mfx, const char* domain)
     }
 
     //now check that this ac_domain can be requested
-    if ((mfx->define) && (mfx->define->name)) {
-        rpmlog(RPMLOG_DEBUG, "mfx->define->name %s domain %s\n", mfx->define->name, name);
-        if (strcmp(mfx->define->name, name) == 0) {
-            // AC domain access is requested or permitted from the same package where it was defined. 
-            // This case is always allowed
-            msmFreePointer((void**)&name);
-            return 0;		
-         }
+    if (mfx->defines) {
+        LISTHEAD(mfx->defines, define);
+        while (define) {
+            rpmlog(RPMLOG_DEBUG, "define->name %s domain %s\n", define->name, name);
+            if (strcmp(define->name, name) == 0) {
+                // AC domain access is requested or permitted from the same package where it was defined. 
+                // This case is always allowed
+                msmFreePointer((void**)&name);
+                return 0;		
+            }
+            define = define->next;
+        }
     } 
 
     // no need to check if developer allowed other packages to request/permit this domain
@@ -862,68 +875,81 @@ static int msmCheckDomainRequestOrPermit(manifest_x *mfx, const char* domain)
     }
 }
 
-int msmSetupDefine(struct smack_accesses *smack_accesses, manifest_x *mfx)
+int msmSetupDefines(struct smack_accesses *smack_accesses, manifest_x *mfx)
 {
     d_request_x *d_request;
+    define_x *define;
     d_permit_x *d_permit;
     ac_domain_x * defined_ac_domain = NULL;
     int ret;
 
-    if ( (!mfx) || (!mfx->define) || (!mfx->define->name)) {
-	rpmlog(RPMLOG_ERR, "Failed to setup define with empty name\n");
-	return -1;
+    if ( (!mfx) || (!mfx->defines)) {
+        rpmlog(RPMLOG_ERR, "Failed to setup define\n");
+        return -1;
     }
 
-    /* need to check if domain hasn't been already defined by other package */
+    LISTHEAD(mfx->defines, define);
 
-    HASH_FIND(hh, all_ac_domains, mfx->define->name, strlen(mfx->define->name), defined_ac_domain);
-    if ((defined_ac_domain) && (defined_ac_domain->pkg_name)) { // this domain has been previously defined
-        if (strcmp(defined_ac_domain->pkg_name, mfx->name) != 0) {
-            rpmlog(RPMLOG_ERR, "Attempt to define a domain name %s that has been already defined by package %s\n",
-                   mfx->define->name, defined_ac_domain->pkg_name);
+    while (define) {
+        define_x *next = define->next;
+        if (!define->name) {
+            rpmlog(RPMLOG_ERR, "Attempt to define a domain with empty name. Abort\n");
             return -1;
         }
-    }
+        /* need to check if domain hasn't been already defined by other package */
 
-    if (mfx->define->d_requests) {
-        for (d_request = mfx->define->d_requests; d_request; d_request = d_request->prev) {
-            // first check if the current's package sw source can grant access to requested domain
-            if (msmCheckDomainRequestOrPermit(mfx, d_request->label_name) < 0) {
-#ifdef ENABLE_DCHECKS
+        HASH_FIND(hh, all_ac_domains, define->name, strlen(define->name), defined_ac_domain);
+        if ((defined_ac_domain) && (defined_ac_domain->pkg_name)) { // this domain has been previously defined
+            if (strcmp(defined_ac_domain->pkg_name, mfx->name) != 0) {
+                rpmlog(RPMLOG_ERR, "Attempt to define a domain name %s that has been already defined by package %s\n",
+                       define->name, defined_ac_domain->pkg_name);
                 return -1;
-#endif
             }
-            if (smack_accesses_add(smack_accesses, mfx->define->name, d_request->label_name, d_request->ac_type) < 0) {
-                rpmlog(RPMLOG_ERR, "Failed to set smack rules for domain requests\n");
-                return -1;
-            }	
         }
-    }
 
-    if (mfx->define->d_permits) {
-        for (d_permit = mfx->define->d_permits; d_permit; d_permit = d_permit->prev) {
-            // first check if the current's package sw source can grant access to permited domain
-            if (msmCheckDomainRequestOrPermit(mfx, d_permit->label_name) < 0) {
-#ifdef ENABLE_DCHECKS
-                return -1;
-#endif
-            }
-            if (!d_permit->to_label_name)
-                ret = smack_accesses_add(smack_accesses, d_permit->label_name, mfx->define->name, d_permit->ac_type);
-            else {
-                if (msmCheckLabelProvisioning(mfx, d_permit->to_label_name) < 0) {
+        if (define->d_requests) {
+            for (d_request = define->d_requests; d_request; d_request = d_request->prev) {
+                // first check if the current's package sw source can grant access to requested domain
+                if (msmCheckDomainRequestOrPermit(mfx, d_request->label_name) < 0) {
 #ifdef ENABLE_DCHECKS
                     return -1;
 #endif
                 }
-                ret = smack_accesses_add(smack_accesses, d_permit->label_name, d_permit->to_label_name, d_permit->ac_type);
+                if (smack_accesses_add(smack_accesses, define->name, d_request->label_name, d_request->ac_type) < 0) {
+                    rpmlog(RPMLOG_ERR, "Failed to set smack rules for domain requests\n");
+                    return -1;
+                }    
             }
-            if (ret < 0) {
-                rpmlog(RPMLOG_ERR, "Failed to set smack rules for domain permits\n");
-                return -1;
-            }	
         }
-    } 
+
+        if (define->d_permits) {
+            for (d_permit = define->d_permits; d_permit; d_permit = d_permit->prev) {
+                // first check if the current's package sw source can grant access to permited domain
+                if (msmCheckDomainRequestOrPermit(mfx, d_permit->label_name) < 0) {
+#ifdef ENABLE_DCHECKS
+                    return -1;
+#endif
+                }
+                if (!d_permit->to_label_name)
+                    ret = smack_accesses_add(smack_accesses, d_permit->label_name, define->name, d_permit->ac_type);
+                else {
+                    if (msmCheckLabelProvisioning(mfx, d_permit->to_label_name) < 0) {
+#ifdef ENABLE_DCHECKS
+                        return -1;
+#endif
+                    }
+                    ret = smack_accesses_add(smack_accesses, d_permit->label_name, d_permit->to_label_name, d_permit->ac_type);
+                }
+                if (ret < 0) {
+                    rpmlog(RPMLOG_ERR, "Failed to set smack rules for domain permits\n");
+                    return -1;
+                }    
+            }
+        } 
+
+        define = next;
+    }
+
     return 0;
 }
 
@@ -1019,9 +1045,8 @@ int msmSetupPackages(struct smack_accesses *smack_accesses, package_x *packages,
     char *p_rankkey, *c_rankkey; 
     for (package = packages; package; package = package->prev) {
 	package_x *current_p;
-	     rpmlog(RPMLOG_DEBUG, "before HASH_FIND, package->name %s\n", package->name);
+	rpmlog(RPMLOG_DEBUG, "before HASH_FIND, package->name %s\n", package->name);
 	HASH_FIND(hh, allpackages, package->name, strlen(package->name), current_p);
-	     rpmlog(RPMLOG_DEBUG, "after HASH_FIND\n");
 	if (current_p) {
 	    if (!current_p->sw_source) {
 		return -1;
@@ -1203,13 +1228,12 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
     if (exec_label) {
         execLabeldefined = 1;
         if ((strcmp(exec_label, "none") == 0) 
-            || ( (mfx->request) && (mfx->request->ac_domain) && (strcmp(exec_label, mfx->request->ac_domain) == 0))
-            || ( (mfx->define) &&  (mfx->define->name) && (strcmp(exec_label, mfx->define->name) == 0))) {
+            || ( (mfx->request) && (mfx->request->ac_domain) && (strcmp(exec_label, mfx->request->ac_domain) == 0))) {
             // these labels are allowed
         } else {
             // ignore all other exec labels, because they aren't allowed for security reasons
             exec_label = NULL;
-            rpmlog(RPMLOG_DEBUG, "It isn't allowed to label the file with smack64label other than ac domain or \"none\" value\n");
+            rpmlog(RPMLOG_DEBUG, "It isn't allowed to label the file with smack64label other than requested ac domain or \"none\" value\n");
             rpmlog(RPMLOG_DEBUG, "The default ac domain label will be used instead\n");
         }
     }	
@@ -1225,18 +1249,8 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
                 if (!label) label = isolatedLabel;
                 if (!exec_label) exec_label = isolatedLabel;
             }
-        } else if (mfx->define) { // AC domain defined in manifest
-            if (mfx->define->name) {
-                if (!label) label = mfx->define->name;
-                if (!exec_label) exec_label = mfx->define->name;
-            } else {
-                rpmlog(RPMLOG_DEBUG, "Define for AC domain is empty. Can't identify default file label\n");
-                rpmlog(RPMLOG_DEBUG, "File will be labelled with the label \"Isolated\"\n");
-                if (!label) label = isolatedLabel;
-                if (!exec_label) exec_label = isolatedLabel;
-            }		 
-        } else { // no request or definition of domain
-            rpmlog(RPMLOG_DEBUG, "Both define and request sections are empty. Can't identify default file label\n");
+        } else { // no request of domain
+            rpmlog(RPMLOG_DEBUG, "The request section is missing. Can't identify default file label\n");
             rpmlog(RPMLOG_DEBUG, "File will be labelled with the label \"Isolated\"\n");
             if (!label) label = isolatedLabel;
             if (!exec_label) exec_label = isolatedLabel;
@@ -1287,7 +1301,7 @@ void msmRemoveRules(struct smack_accesses *smack_accesses, manifest_x *mfx, int 
     if (!package)
 	return;
 
-    if ((mfx->define) || (mfx->sw_sources)) {
+    if ((mfx->defines) || (mfx->sw_sources)) {
         /* remove smack rule file and rule set from kernel */
         rpmlog(RPMLOG_DEBUG, "removing smack rules for %s\n", mfx->name);
         msmSetupSmackRules(smack_accesses, mfx->name, SMACK_UNINSTALL, SmackEnabled);

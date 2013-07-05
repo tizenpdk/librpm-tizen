@@ -52,6 +52,9 @@
 #define DBUS_METHOD    4
 #define DBUS_SIGNAL    5
 
+#include "plugin.h"
+#include "debug.h"
+
 #include <uthash.h>
 #include <sys/capability.h>
 #include <sys/smack.h>
@@ -248,6 +251,8 @@ typedef struct define_x {
     struct d_request_x *d_requests;
     struct d_permit_x *d_permits;
     struct d_provide_x *d_provides;
+    struct define_x *prev;
+    struct define_x *next;
 } define_x;
 
 typedef struct package_x {
@@ -285,7 +290,7 @@ typedef struct manifest_x { /*package manifest */
     struct provide_x *provides; /* assign section */
     struct request_x *request; /* request section */
     struct sw_source_x *sw_sources; /*defined software sources(non-NULL only for configuration manifests)*/
-    struct define_x *define; /* define section */
+    struct define_x *defines; /* define section(s) */
     struct file_x *files; /* installed files */
 } manifest_x;
 
@@ -353,7 +358,7 @@ int msmSetupPackages(struct smack_accesses *smack_accesses, package_x *packages,
  * @param mfx			package manifest
  * @return			0 on success, else -1
  */
-int msmSetupDefine(struct smack_accesses *smack_accesses, manifest_x *mfx);
+int msmSetupDefines(struct smack_accesses *smack_accesses, manifest_x *mfx);
 
 /** \ingroup msm
  * Setup smack rules according to the manifest

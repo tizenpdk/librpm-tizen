@@ -25,9 +25,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  */
- 
-#include "plugin.h"
-#include "debug.h"
 
 #include <errno.h>
 #include <sys/types.h>
@@ -585,16 +582,16 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
                     goto fail;
                 }
             }           
-            if (ctx->mfx->define) {
-                if (ctx->mfx->define->name)
-                    smackLabel = 1;
-                ret = msmSetupDefine(ctx->smack_accesses, ctx->mfx);
+            if (ctx->mfx->defines) {
+                ret = msmSetupDefines(ctx->smack_accesses, ctx->mfx);
                 if (ret) {
                     rpmlog(RPMLOG_ERR, "AC domain setup failed for %s\n",
                            rpmteN(ctx->te));
                     msmCancelPackage(ctx->mfx->name);
                     goto fail;
-                }
+                } else {
+		    smackLabel = 1;
+		}
             }           
             if (ctx->mfx->request) {	
                 if (ctx->mfx->request->ac_domain)
@@ -776,7 +773,7 @@ rpmRC PLUGINHOOK_PSM_POST_FUNC(rpmte te, int rpmrc)
             } else {
                 rpmlog(RPMLOG_DEBUG, "removing %s manifest data\n", 
                        rpmteN(ctx->te));
-                if (ctx->mfx->define || ctx->mfx->provides || ctx->mfx->sw_sources) {
+                if (ctx->mfx->defines || ctx->mfx->provides || ctx->mfx->sw_sources) {
                     msmRemoveRules(ctx->smack_accesses, ctx->mfx, SmackEnabled);
                 } 	    
                 msmRemoveConfig(ctx->mfx);
