@@ -162,7 +162,8 @@ cp -a tizen_macros %{buildroot}/usr/lib/rpm
 mkdir -p %{buildroot}/usr/lib/rpm/tizen
 install -m 755 %{SOURCE13} %{buildroot}/usr/lib/rpm/tizen
 install -m 755 %{SOURCE23} %{buildroot}/usr/lib/rpm
-install -m 644 %{SOURCE22} ${RPM_BUILD_ROOT}%{_sysconfdir}/device-sec-policy
+install -m 644 %{SOURCE22} %{buildroot}%{_sysconfdir}/device-sec-policy
+install -m 644 %{SOURCE22} %{buildroot}%{_libdir}/rpm-plugins/msm-device-sec-policy
 ln -s ../tizen_macros %{buildroot}/usr/lib/rpm/tizen/macros
 for d in BUILD RPMS SOURCES SPECS SRPMS BUILDROOT ; do
   mkdir -p %{buildroot}/usr/src/packages/$d
@@ -304,5 +305,6 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 %manifest %{name}.manifest
 %defattr(-,root,root)
 %{_libdir}/rpm-plugins/msm.so
+%{_libdir}/rpm-plugins/msm-device-sec-policy
 %config(noreplace) %{_sysconfdir}/device-sec-policy
 

@@ -1082,9 +1082,9 @@ PreReq: python >= %minver, python < %maxver
 #------------------------------------------------------------------------------
 # transaction specific macros
 %__transaction_plugins     msm
-%__plugindir		%{_libdir}/rpm-plugins
-%__transaction_msm       %{__plugindir}/msm.so
-
+%__plugindir				%{_libdir}/rpm-plugins
+%__transaction_msm       		%{__plugindir}/msm.so
+%__transaction_msm_default_policy	%{_libdir}/rpm-plugins/msm-device-sec-policy
 #------------------------------------------------------------------------------
 # Macros for further automated spec %setup and patch application
 

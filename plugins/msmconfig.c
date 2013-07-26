@@ -232,10 +232,18 @@ static void msmHandleSWSource(xmlNode *parent, sw_source_x *sw_source)
  * @param mfx		data to serialize
  * @return		RPMRC_OK or RPMRC_FAIL
  */
-rpmRC msmSaveDeviceSecPolicyXml(manifest_x *mfx)
+rpmRC msmSaveDeviceSecPolicyXml(manifest_x *mfx, const char *rootDir)
 {    
     FILE *outFile;
-    rpmRC rc = RPMRC_OK;    
+    rpmRC rc = RPMRC_OK;
+    char *fullPath = NULL;
+
+    fullPath = rpmGenPath(rootDir, DEVICE_SECURITY_POLICY, NULL);
+    rpmlog(RPMLOG_DEBUG, "fullPath %s\n", fullPath);
+    if (!fullPath) {
+        rpmlog(RPMLOG_ERR, "Building a full path failed for device security policy\n");
+        return RPMRC_FAIL;
+    }
 
     /* if data doesn't have sw_source information, no need to do anything */    
     if (mfx && mfx->sw_sources) {    
@@ -247,19 +255,21 @@ rpmRC msmSaveDeviceSecPolicyXml(manifest_x *mfx)
 	LISTHEAD(mfx->sw_sources, sw_source);	
         msmHandleSWSource(rootnode, sw_source);
 
-        outFile = fopen(DEVICE_SECURITY_POLICY, "w");
+        outFile = fopen(fullPath, "w");
         if (outFile) {
             xmlElemDump(outFile, doc, rootnode);
             fclose(outFile);
         } else {
-            rpmlog(RPMLOG_ERR, "Unable to write device security policy%s\n", 
-	           DEVICE_SECURITY_POLICY);
+            rpmlog(RPMLOG_ERR, "Unable to write device security policy to %s\n",
+                   fullPath);
+            msmFreePointer((void**)&fullPath);
             rc = RPMRC_FAIL;
         }
         xmlFreeDoc(doc);
         xmlCleanupParser();
     }
 
+    msmFreePointer((void**)&fullPath);
     return rc;
 }
 

@@ -438,9 +438,10 @@ int strwcmp(const char *s1, const char *s2);
 /** \ingroup msm
  * Saves configuration into /etc/dev-sec-policy.
  * @param mfx		data to serialize
+ * @param rooDir	ts->rootDir prefix
  * @return		RPMRC_OK or RPMRC_FAIL
  */
-rpmRC msmSaveDeviceSecPolicyXml(manifest_x *root);
+rpmRC msmSaveDeviceSecPolicyXml(manifest_x *root, const char *rootDir);
 
 /** \ingroup msm
  * Depth first tree traversal for sw source tree.
