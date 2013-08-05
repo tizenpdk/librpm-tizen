@@ -1,3 +1,10 @@
+* Mon Aug 05 2013 Anas Nashif <anas.nashif@intel.com> accepted/tizen/20130710.214747@675aeea
+- Security plugin: support for --root option
+- Security plugin: pkg_name allocation in conflict
+- Security plugin: allowing multiple domains definition
+- resetting manifest requested domain to floor
+- update changelog
+
 * Wed Jun 12 2013 Anas Nashif <anas.nashif@intel.com> accepted/tizen/20130520.094313@a3c78e0
 - update macros from project conf
 - Security plugin: Adding configuration option --disable-dchecks
