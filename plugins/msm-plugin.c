@@ -124,12 +124,6 @@ rpmRC PLUGINHOOK_INIT_FUNC(rpmts _ts, const char *name, const char *opts)
     if (!ts)
         return RPMRC_FAIL;
 
-#ifndef ENABLE_DCHECKS
-    rpmlog(RPMLOG_DEBUG, "ENABLE_DCHECKS is undefined!\n");
-#else
-    rpmlog(RPMLOG_DEBUG, "ENABLE_DCHECKS is defined!\n");
-#endif
-
     fullPath = rpmGenPath(ts->rootDir, DEVICE_SECURITY_POLICY, NULL);
     rpmlog(RPMLOG_DEBUG, "fullPath %s\n", fullPath);
     if (!fullPath) {

@@ -719,14 +719,6 @@ AC_SUBST(WITH_MSM_LIB)
 AC_SUBST(WITH_MSM_INCLUDE)
 AM_CONDITIONAL(MSM,[test "$with_msm" = yes])
 
-#domain checks enabling/disabling for security plugin
-AC_ARG_ENABLE(dchecks, [AS_HELP_STRING([--disable-dchecks],[build without domain checks])],,[enable_dchecks=yes])
-AS_IF([test "$enable_dchecks" = yes],[
-  AC_DEFINE(ENABLE_DCHECKS, 1, [Build with domain checks])
-])
-AM_CONDITIONAL(ENABLE_DCHECKS,[test "$enable_dchecks" = yes])
-
-
 # libcap
 WITH_CAP_LIB=
 AC_ARG_WITH(cap, [AS_HELP_STRING([--with-cap],[build with capability support])],
