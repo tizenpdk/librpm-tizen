@@ -548,11 +548,12 @@ static int msmSetupDBusConfig(package_x *package, dbus_x *dbus, int phase, manif
     node_x *node;
     interface_x *interface;
     member_x *member;
-    int ret = -1;
+    int ret = 0;
 
     char *sysconfdir = rpmExpand("%{?_sysconfdir}", NULL);
     if (!sysconfdir || !strcmp(sysconfdir, "")) {
 	rpmlog(RPMLOG_ERR, "Failed to expand %%_sysconfdir macro\n");
+        ret = -1;
 	goto exit;
     }
     snprintf(path, sizeof(path), "%s/dbus-1/%s.d/manifest.%s.conf", 
@@ -561,6 +562,7 @@ static int msmSetupDBusConfig(package_x *package, dbus_x *dbus, int phase, manif
     file = fopen(path, phase ? "a" : "w");
     if (!file) {
 	rpmlog(RPMLOG_ERR, "Cannot open %s: %s\n", path, strerror(errno));
+        ret = -1;
 	goto exit;
     }
 
@@ -573,6 +575,7 @@ static int msmSetupDBusConfig(package_x *package, dbus_x *dbus, int phase, manif
 	if (fputs(data, file) == EOF) {
 	    rpmlog(RPMLOG_ERR, "Failed to write %s: %s\n", 
 		   path, strerror(errno));
+            ret = -1;
 	    goto exit;
 	}
     }
@@ -590,6 +593,7 @@ static int msmSetupDBusConfig(package_x *package, dbus_x *dbus, int phase, manif
             if (fputs(data, file) == EOF) {
                 rpmlog(RPMLOG_ERR, "Failed to write %s: %s\n", 
                        path, strerror(errno));
+                ret = -1;
                 goto exit;
             }
 	}
@@ -599,26 +603,30 @@ static int msmSetupDBusConfig(package_x *package, dbus_x *dbus, int phase, manif
 	}
 	for (node = dbus->nodes; node; node = node->prev) {
 	    if (node->annotation) {
-                msmSetupDBusRule(file, node->annotation->value, DBUS_PATH,
+                ret = msmSetupDBusRule(file, node->annotation->value, DBUS_PATH,
                                  dbus->name, node->name, NULL, NULL, mfx);
+                if (ret < 0) goto exit;
 	    }
 	    for (member = node->members; member; member = member->prev) {
 		if (member->annotation) {
-                    msmSetupDBusRule(file, member->annotation->value, member->type, 
+                    ret = msmSetupDBusRule(file, member->annotation->value, member->type, 
                                      dbus->name, member->name, 
                                      "path", node->name, mfx);
+                    if (ret < 0) goto exit;
 		}
 	    }
 	    for (interface = node->interfaces; interface; interface = interface->prev) {
 		if (interface->annotation) {
-                    msmSetupDBusRule(file, interface->annotation->value, DBUS_INTERFACE, 
+                    ret = msmSetupDBusRule(file, interface->annotation->value, DBUS_INTERFACE, 
                                      dbus->name, interface->name, NULL, NULL, mfx);
+                    if (ret < 0) goto exit;
 		}
 		for (member = interface->members; member; member = member->prev) {
 		    if (member->annotation) {
-                        msmSetupDBusRule(file, member->annotation->value, member->type, 
+                        ret = msmSetupDBusRule(file, member->annotation->value, member->type, 
                                          dbus->name, member->name,
                                          "interface", interface->name, mfx);
+                        if (ret < 0) goto exit;
 		    }
 		}
 	    }
@@ -630,6 +638,7 @@ static int msmSetupDBusConfig(package_x *package, dbus_x *dbus, int phase, manif
 	if (fputs(data, file) == EOF) {
 	    rpmlog(RPMLOG_ERR, "Failed to write %s: %s\n", 
 		   path, strerror(errno));
+            ret = -1;
 	    goto exit;
 	}
 	rpmlog(RPMLOG_DEBUG, "wrote dbus config %s\n", path);	
@@ -638,7 +647,7 @@ static int msmSetupDBusConfig(package_x *package, dbus_x *dbus, int phase, manif
 
  exit:
     if (file) fclose(file);
-    if (ret) unlink(path);
+    if (ret < 0) unlink(path);
     msmFreePointer((void**)&sysconfdir);
     return ret;
 }
@@ -794,22 +803,24 @@ int msmSetupDBusPolicies(package_x *package, manifest_x *mfx)
     dbus_x *system = NULL;
     provide_x *provide;
     dbus_x *dbus;
+    int ret = 0;
 
     for (provide = package->provides; provide; provide = provide->prev) {
         for (dbus = provide->dbuss; dbus; dbus = dbus->prev) {
             if (!strcmp(dbus->bus, "session")) {
-                msmSetupDBusConfig(package, dbus, session ? 1 : 0, mfx);
+                ret = msmSetupDBusConfig(package, dbus, session ? 1 : 0, mfx);
                 session = dbus;
             } else if (!strcmp(dbus->bus, "system")) {
-                msmSetupDBusConfig(package, dbus, system ? 1 : 0, mfx);
+                ret = msmSetupDBusConfig(package, dbus, system ? 1 : 0, mfx);
                 system = dbus;
             } else return -1;
+            if (ret < 0) return ret;
         }
-       if (session) msmSetupDBusConfig(package, session, -1, mfx);
-       if (system) msmSetupDBusConfig(package, system, -1, mfx);
+       if (session) ret = msmSetupDBusConfig(package, session, -1, mfx);
+       if (system) ret = msmSetupDBusConfig(package, system, -1, mfx);
        session = system = NULL;
     }
-    return 0;
+    return ret;
 }
 
 static int msmCheckDomainRequestOrPermit(manifest_x *mfx, const char* domain) 

@@ -500,6 +500,8 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
     rpmRC rc = RPMRC_OK;
     int ret = 0;
 
+    package_created = 0;
+
     if (!root && !rootSWSource) {
         /* no sw source config, just exit */
         goto exit;
@@ -535,6 +537,7 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
             }
             headerFree(h);
         }
+        package_created = 1;
         /* if (!current) {
             rpmlog(RPMLOG_INFO, "no sw source for removing %s\n", rpmteN(ctx->te));
             goto exit;
@@ -624,6 +627,7 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
             goto fail;
         }
 
+        package_created = 1;
         if (rootSWSource) {
             /* current is root */
             root = ctx->mfx;
@@ -639,7 +643,6 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
                 if (ret) {
                     rpmlog(RPMLOG_ERR, "SW source setup failed for %s\n",
 			    rpmteN(ctx->te));
-                    msmCancelPackage(ctx->mfx->name);
                     goto fail;
                 }
             }           
@@ -648,7 +651,6 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
                 if (ret) {
                     rpmlog(RPMLOG_ERR, "AC domain setup failed for %s\n",
                            rpmteN(ctx->te));
-                    msmCancelPackage(ctx->mfx->name);
                     goto fail;
                 } else {
 		    smackLabel = 1;
@@ -661,7 +663,14 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
                 if (ret) {
                     rpmlog(RPMLOG_ERR, "Request setup failed for %s\n",
                            rpmteN(ctx->te));
-                    msmCancelPackage(ctx->mfx->name);
+                    goto fail;
+                }
+            }
+            if (package->provides) {
+                ret = msmSetupDBusPolicies(package, ctx->mfx);
+                if (ret) {
+                    rpmlog(RPMLOG_ERR, "Setting up dbus policies for %s failed\n",
+                           rpmteN(ctx->te));
                     goto fail;
                 }
             }
@@ -672,17 +681,7 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
                 if (ret) {
                     rpmlog(RPMLOG_ERR, "Setting up smack rules for %s failed\n",
                            rpmteN(ctx->te));
-                    msmCancelPackage(ctx->mfx->name);
                     goto fail; 
-                }
-            }
-            if (package->provides) {
-                ret = msmSetupDBusPolicies(package, ctx->mfx);
-                if (ret) {
-                    rpmlog(RPMLOG_ERR, "Setting up dbus policies for %s failed\n",
-                           rpmteN(ctx->te));
-                    msmCancelPackage(ctx->mfx->name);
-                    goto fail;
                 }
             }
 
@@ -690,12 +689,12 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
                the situation when no ac domain defined or requested */
             if (smackLabel == 0) {
                 rpmlog(RPMLOG_ERR, "No ac domain defined or requested for package %s. Abort.\n",   rpmteN(ctx->te));
-                msmCancelPackage(ctx->mfx->name);
                 goto fail;
             }
         }
 
     } else if (rpmteDependsOn(ctx->te)) { /* TR_REMOVED */
+        package_created = 1;
         rpmlog(RPMLOG_DEBUG, "upgrading package %s by %s\n",
                rpmteNEVR(ctx->te), rpmteNEVR(rpmteDependsOn(ctx->te)));
     } else if (mfx->sw_sources) {
@@ -705,7 +704,6 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
     }
 
     rpmlog(RPMLOG_DEBUG, "Finished with pre psm hook \n");
-    package_created = 1;
 
     goto exit;
 
@@ -799,7 +797,6 @@ rpmRC PLUGINHOOK_FSM_COMMIT_FUNC(const char* path, mode_t mode, int type)
 rpmRC PLUGINHOOK_PSM_POST_FUNC(rpmte te, int rpmrc)
 {
 
-    int ret = 0;
     packagecontext *ctx = context;
     if (!ctx) return RPMRC_FAIL;
 
@@ -812,13 +809,13 @@ rpmRC PLUGINHOOK_PSM_POST_FUNC(rpmte te, int rpmrc)
         /* failure in rpm psm, rollback */
         if (rpmteType(ctx->te) == TR_ADDED)
             msmCancelPackage(ctx->mfx->name);
-        goto exit;
+        return RPMRC_FAIL;
     }
 
     if (!ctx->mfx){
         rpmlog(RPMLOG_ERR, "Manifest is missing while it should be present for the package %s\n",
                rpmteN(ctx->te));
-        goto exit;
+        return RPMRC_FAIL;
     }
 
     if (rootSWSource) {
@@ -842,12 +839,6 @@ rpmRC PLUGINHOOK_PSM_POST_FUNC(rpmte te, int rpmrc)
         }
     }
 
- exit:
-    current = NULL;
-
-    if (ret) {
-        return RPMRC_FAIL;
-    }
     return rpmrc;
 }
 
