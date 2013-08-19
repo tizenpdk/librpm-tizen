@@ -457,16 +457,4 @@ sw_source_x *msmSWSourceTreeTraversal(sw_source_x *sw_sources, int (func)(sw_sou
  * Free internal hashes.
  */
 void msmFreeInternalHashes(void);
-
-/** \ingroup msm
- * Query that requested package really owns the file.
- * @param rfor		request for 'package::/file/path'
- * @param sw_sname	sw source name, caller must free
- * @param pname		package name, caller must free
- * @return		pointer to the path part in rfor, or NULL if file
- *			is not owned by the specified package
- */
-const char *msmQueryPackageFile(const char *rfor, 
-				 const char **sw_sname, const char **pname);
-
 #endif

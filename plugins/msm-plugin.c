@@ -196,7 +196,7 @@ rpmRC PLUGINHOOK_INIT_FUNC(rpmts _ts, const char *name, const char *opts)
     if (stat(fullPath, &buf) == 0) {
         int res = smack_new_label_from_self(&ownSmackLabel);
         SmackEnabled = 1;
-        if (res != 0) {
+        if (res < 0) {
             rpmlog(RPMLOG_ERR, "Failed to obtain rpm security context\n");
             goto plugin_error;
         }
@@ -899,45 +899,6 @@ rpmRC PLUGINHOOK_CLEANUP_FUNC(void)
     if (cookie) magic_close(cookie);
 
     return RPMRC_OK;
-}
-
-const char *msmQueryPackageFile(const char *rfor, 
-				 const char **dname, const char **pname)
-{
-    int match = 0;
-    const char *path = NULL;
-
-    if (ts) {
-        char *sep = strchr(rfor, ':');
-        if (sep && sep[1] == ':' && sep[2] == '/') 
-            path = &sep[2];
-        if (!path) return NULL;
-
-        rpmdbMatchIterator mi = rpmtsInitIterator(ts, RPMTAG_BASENAMES, path, 0);
-        if (!mi)
-            mi = rpmtsInitIterator(ts, RPMTAG_PROVIDENAME, path, 0);
-        if (mi) {
-            Header h;
-            const char *name, *sw_source;
-            while ((h = rpmdbNextIterator(mi))) {
-                rpmdbCheckSignals();
-                name = headerGetString(h, RPMTAG_NAME);
-                sw_source = headerGetString(h, RPMTAG_SECSWSOURCE);
-                if (name && sw_source) {
-                    match = !strncmp(rfor, name, path - rfor - 2);
-                    rpmlog(RPMLOG_DEBUG, "file %s belongs to package %s in sw source %s %s\n", 
-                           path, name, sw_source, (match ? "(matched request)" : ""));
-                    if (match) {
-                        *pname = xstrdup(name);
-                        *dname = xstrdup(sw_source);
-                        break;
-                    }
-                }
-            }
-            mi = rpmdbFreeIterator(mi);
-        }
-    }
-    return match ? path : NULL;
 }
 
 void msmFreePointer(void** ptr)
