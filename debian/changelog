@@ -1,9 +1,13 @@
-librpm-tizen (4.11.0.1.tizen20130618-tizen20130820) unstable; urgency=low
+librpm-tizen (4.11.0.1.tizen20130618-tizen20130821) unstable; urgency=low
 
+  [ Zhang Qiang ]
+  * fix segmentation fault error while parsing spec
+
+  [ Markus Lehtonen ]
   * Prevent execution of arbitrary scripts
   * Bump the log level of "unexpanded script" msg
 
- -- Markus Lehtonen <markus.lehtonen@linux.intel.com>  Tue, 20 Aug 2013 19:47:53 +0300
+ -- Markus Lehtonen <markus.lehtonen@linux.intel.com>  Wed, 21 Aug 2013 14:31:24 +0300
 
 librpm-tizen (4.11.0.1.tizen20130618-tizen20130619) unstable; urgency=low
 
