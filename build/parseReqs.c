@@ -124,7 +124,7 @@ rpmRC parseRCPOT(rpmSpec spec, Package pkg, const char *field, rpmTagVal tagN,
 	 */
 	if (isascii(r[0]) && !(risalnum(r[0]) || r[0] == '_' || r[0] == '/')) {
 	    rpmlog(RPMLOG_INFO,
-		   _("line %s: Dependency tokens must begin with alpha-numeric, '_' or '/': %s\n"),
+		   _("line %d: Dependency tokens must begin with alpha-numeric, '_' or '/': %s\n"),
 		   spec->lineNum, spec->line);
 	}
 
