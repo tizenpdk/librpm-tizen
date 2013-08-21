@@ -1,3 +1,8 @@
+* Wed Aug 21 2013 Anas Nashif <anas.nashif@intel.com> submit/tizen/20130820.223822@6ec9c11
+- Security plugin: small fixes
+- Security plugin: removing disable-dchecks option
+- update changes and release
+
 * Mon Aug 05 2013 Anas Nashif <anas.nashif@intel.com> accepted/tizen/20130710.214747@675aeea
 - Security plugin: support for --root option
 - Security plugin: pkg_name allocation in conflict
