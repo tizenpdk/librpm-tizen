@@ -60,7 +60,7 @@ Source23:       find-provides.ksyms
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 AutoReqProv:    No
 
-Provides:       rpm-tizen = %{version}-tizen20130820
+Provides:       rpm-tizen = %{version}-tizen20130821
 #
 # avoid bootstrapping problem
 %define _binary_payload w9.bzdio
