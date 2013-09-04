@@ -210,11 +210,10 @@ rm -rf %{buildroot}/%{_libdir}/python%{py_ver}
 rm -f %{buildroot}%{_libdir}/*.la
 rm -f %{buildroot}%{_libdir}/rpm-plugins/*.la
 sh %{buildroot}/usr/lib/rpm/find-lang.sh %{buildroot} rpm
-%ifarch armv7hl
+%ifarch armv7hl armv7l
 # rpm is using the host_cpu as default for the platform, but armv7hl is not known by the kernel.
 # so we need to enforce the platform here.
-# We don't want to use armv7l because it would make us incompatible to Fedora and MeeGo plattforms.
-echo -n armv7hl-tizen-linux> %{buildroot}/etc/rpm/platform
+echo -n %{_target_cpu}-tizen-linux-gnueabi > %{buildroot}/etc/rpm/platform
 %endif
 
 %post

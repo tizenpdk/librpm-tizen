@@ -67,7 +67,7 @@ optflags: armv4tl -O2 -g -march=armv4t
 optflags: armv5tel -O2 -g -march=armv5te
 optflags: armv5tejl -O2 -g -march=armv5te
 optflags: armv6l -O2 -g -march=armv6
-optflags: armv7l -O2 -g -march=armv7
+optflags: armv7l -O2 -g -march=armv7-a -mtune=cortex-a8 -mlittle-endian  -mfpu=vfpv3 -mfloat-abi=softfp -D __SOFTFP__
 optflags: armv7hl -O2 -g -march=armv7-a -mfloat-abi=hard -mthumb -mabi=aapcs-linux
 
 optflags: atarist -O2 -g -fomit-frame-pointer
