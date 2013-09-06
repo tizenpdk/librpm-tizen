@@ -352,9 +352,9 @@ int readLine(rpmSpec spec, int strip)
         match = parseExpressionBoolean(spec, s);
 	if (match < 0) {
 	    rpmlog(RPMLOG_ERR,
-			_("%s:%d: bad %%if condition\n"),
+			_("%s:%d: bad %%if condition, continuing nevertheless\n"),
 			ofi->fileName, ofi->lineNum);
-	    return PART_ERROR;
+	    match = 0;
 	}
     } else if (ISMACRO(s, "%else")) {
 	if (! spec->readStack->next) {
