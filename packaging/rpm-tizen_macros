@@ -68,7 +68,6 @@
   CXXFLAGS="${CXXFLAGS:-%optflags}" ; export CXXFLAGS ; \
   FFLAGS="${FFLAGS:-%optflags -I%_fmoddir}" ; export FFLAGS ; \
   ./configure --build=%{_build} --host=%{_host} \\\
-        --target=%{_target_platform} \\\
         --program-prefix=%{?_program_prefix} \\\
         --prefix=%{_prefix} \\\
         --exec-prefix=%{_exec_prefix} \\\
@@ -91,7 +90,6 @@
   FFLAGS="${FFLAGS:-%optflags -I%_fmoddir}" ; export FFLAGS ; \
   autoreconf -v --install --force || exit 1 \
   ./configure --build=%{_build} --host=%{_host} \\\
-        --target=%{_target_platform} \\\
         --program-prefix=%{?_program_prefix} \\\
         --prefix=%{_prefix} \\\
         --exec-prefix=%{_exec_prefix} \\\
@@ -112,7 +110,6 @@
   CXXFLAGS="${CXXFLAGS:-%optflags}" ; export CXXFLAGS ; \
   FFLAGS="${FFLAGS:-%optflags -I%_fmoddir}" ; export FFLAGS ; \
   ./autogen.sh --build=%{_build} --host=%{_host} \\\
-        --target=%{_target_platform} \\\
         --program-prefix=%{?_program_prefix} \\\
         --prefix=%{_prefix} \\\
         --exec-prefix=%{_exec_prefix} \\\
