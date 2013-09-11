@@ -1,3 +1,7 @@
+* Wed Sep 25 2013 Jacek Bukarewicz <j.bukarewicz@samsung.com> accepted/tizen/20130916.211819@a771cdf
+- Introduction of -locale and -docs subpackages. Moved package to another group
+- update changes
+
 * Mon Sep 16 2013 Anas Nashif <anas.nashif@intel.com> accepted/tizen/20130913.024734@b487cf5
 - remove --target from %configure macros
 
