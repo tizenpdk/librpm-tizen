@@ -813,7 +813,7 @@ static int Pmkstemp(lua_State *L)
 static const luaL_Reg R[] =
 {
 	{"access",		Paccess},
-	{"chdir",		Pchdir},
+/*	{"chdir",		Pchdir},
 	{"chmod",		Pchmod},
 	{"chown",		Pchown},
 	{"ctermid",		Pctermid},
@@ -851,7 +851,7 @@ static const luaL_Reg R[] =
 	{"utime",		Putime},
 	{"wait",		Pwait},
 	{"setenv",		Psetenv},
-	{"unsetenv",		Punsetenv},
+	{"unsetenv",		Punsetenv},*/
 	{NULL,			NULL}
 };
 
