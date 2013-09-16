@@ -1233,6 +1233,7 @@ expandMacro(MacroBuf mb, const char *src, size_t slen)
 	}
 
 #ifdef	WITH_LUA
+#define LUA_FAILURE_OUTPUT "1"
 	if (STREQ("lua", f, fn)) {
 		rpmlua lua = NULL; /* Global state. */
 		const char *ls = s+sizeof("{lua:")-1;
@@ -1242,9 +1243,14 @@ expandMacro(MacroBuf mb, const char *src, size_t slen)
 		memcpy(scriptbuf, ls, lse-ls);
 		scriptbuf[lse-ls] = '\0';
 		rpmluaPushPrintBuffer(lua);
-		if (rpmluaRunScript(lua, scriptbuf, NULL) == -1)
-		    rc = 1;
-		printbuf = rpmluaPopPrintBuffer(lua);
+		if (rpmluaRunScript(lua, scriptbuf, NULL) == -1) {
+			printbuf = rpmluaPopPrintBuffer(lua);
+			rpmlog(RPMLOG_WARNING, _("lua: using fallback output '%s'\n"), LUA_FAILURE_OUTPUT);
+			printbuf = (char *)xcalloc(1, sizeof(LUA_FAILURE_OUTPUT));
+			strcpy(printbuf, LUA_FAILURE_OUTPUT);
+		} else {
+			printbuf = rpmluaPopPrintBuffer(lua);
+		}
 		if (printbuf) {
 		    mbAppendStr(mb, printbuf);
 		    free(printbuf);

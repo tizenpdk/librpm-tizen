@@ -530,7 +530,7 @@ int rpmluaRunScript(rpmlua _lua, const char *script, const char *name)
 	lua_pop(L, 1);
 	ret = -1;
     } else if (lua_pcall(L, 0, 0, 0) != 0) {
-	rpmlog(RPMLOG_ERR, _("lua script failed: %s\n"),
+	rpmlog(RPMLOG_WARNING, _("lua script failed: %s\n"),
 		 lua_tostring(L, -1));
 	lua_pop(L, 1);
 	ret = -1;
