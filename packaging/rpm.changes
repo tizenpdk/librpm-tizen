@@ -1,3 +1,6 @@
+* Mon Sep 16 2013 Anas Nashif <anas.nashif@intel.com> accepted/tizen/20130913.024734@b487cf5
+- remove --target from %configure macros
+
 * Mon Sep 02 2013 Anas Nashif <anas.nashif@intel.com> submit/tizen/20130820.223822@6ebf41a
 - Security plugin: adding checking of return code for dbus policy verification
 
