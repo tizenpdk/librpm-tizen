@@ -30,6 +30,8 @@
 
 #include "rpmio/rpmbase64.h"
 #include "rpmio/rpmlog.h"
+#include "rpm/rpmfileutil.h"
+#include <rpm/rpmmacro.h>
 
 #include "msm.h"
 
@@ -271,5 +273,142 @@ rpmRC msmSaveDeviceSecPolicyXml(manifest_x *mfx, const char *rootDir)
 
     msmFreePointer((void**)&fullPath);
     return rc;
+}
+
+/**
+ * Copies a file
+ * @param old_filename	old file name
+ * @param new_filename	new file name
+ * @return		result of copy or -1 on failure
+ */
+static int copyFile(char *old_filename, char  *new_filename)
+{
+    FD_t ptr_old, ptr_new;
+    int res;
+
+    ptr_old = Fopen(old_filename, "r.fdio");
+    ptr_new = Fopen(new_filename, "w.fdio");
+
+    if ((ptr_old == NULL) || (Ferror(ptr_old))) {
+        return  -1;
+    }
+
+    if ((ptr_new == NULL) || (Ferror(ptr_new))) {
+        Fclose(ptr_old);
+        return  -1;
+    }
+
+    res = ufdCopy(ptr_old, ptr_new);
+
+    Fclose(ptr_new);
+    Fclose(ptr_old);
+    return res;
+}
+
+/**
+ * Loads device security policy.
+ * @param rootDir	--root rpm optional prefix
+ * @param dsp		pointer to the loaded policy
+ * @return		RPMRC_OK or RPMRC_FAIL
+ */
+rpmRC msmLoadDeviceSecurityPolicy(const char* rootDir, manifest_x **dsp)
+{
+    char *dspFullPath = NULL, *dspFullPathDir = NULL;
+    char *defaultdspPath = NULL;
+    struct stat buf;
+
+    dspFullPath = rpmGenPath(rootDir, (const char*)DEVICE_SECURITY_POLICY, NULL);
+    rpmlog(RPMLOG_DEBUG, "Device Security policy full path %s\n", dspFullPath);
+    if (!dspFullPath) {
+        rpmlog(RPMLOG_ERR, "Building a full path failed for the device security policy\n");
+        goto ldsp_error;
+    }
+
+    if (stat(dspFullPath, &buf) != 0) { // the policy file is missing
+        if (rootDir) { // we are running with --root option and policy is missing, need to copy it for now
+            // first create prefix for it
+            char *sysconfdir = rpmExpand((const char*)"%{?_sysconfdir}", NULL);
+            if (!sysconfdir || !strcmp(sysconfdir, "")) {
+		rpmlog(RPMLOG_ERR, "Failed to expand %%_sysconfdir macro\n");
+                goto ldsp_error;
+            }
+
+            dspFullPathDir = rpmGenPath(rootDir, sysconfdir, NULL);
+            rpmlog(RPMLOG_DEBUG, "Device Security policy full path dir %s\n", dspFullPathDir);
+            msmFreePointer((void**)&sysconfdir);
+            if (!dspFullPathDir) {
+		rpmlog(RPMLOG_ERR, "Building a full path for the device security policy dir failed\n");
+                goto ldsp_error;
+            }
+            if (rpmioMkpath(dspFullPathDir, 0755, getuid(), getgid()) != 0) {
+                    rpmlog(RPMLOG_ERR, "Failed to create a path for the device security policy dir\n");
+                    goto ldsp_error;
+            }
+            defaultdspPath = rpmExpand((const char*)"%{?__transaction_msm_default_policy}", NULL);
+            if (!defaultdspPath || !strcmp(defaultdspPath, "")) {
+                rpmlog(RPMLOG_ERR, "Failed to expand transaction_msm_default_policy macro\n");
+                goto ldsp_error;
+            }
+            if(copyFile(defaultdspPath, dspFullPath) == -1) {
+		/* Do not allow plug-in to proceed without security policy existing */
+		rpmlog(RPMLOG_ERR, "Failed to copy the device security policy to the chroot environment\n");
+                goto ldsp_error;
+            }
+	} else {
+            /* Do not allow plug-in to proceed without security policy existing */
+            rpmlog(RPMLOG_ERR, "Policy file is missing at %s\n",
+		   dspFullPath);
+            goto ldsp_error;
+        }
+    }
+
+    rpmlog(RPMLOG_DEBUG, "reading the device security policy from %s\n", dspFullPath);
+    *dsp = msmProcessDevSecPolicyXml(dspFullPath);
+
+    if (!*dsp) {
+        rpmlog(RPMLOG_ERR, "Failed to process sw sources from %s\n", dspFullPath);
+        goto ldsp_error;
+    } else {
+        if (msmSetupSWSources(NULL, *dsp, NULL)) {
+            rpmlog(RPMLOG_ERR, "Failed to setup the device security policy from %s\n", dspFullPath);
+            goto ldsp_error;
+        }
+    }
+
+    return RPMRC_OK;
+
+ldsp_error:
+    msmFreePointer((void**)&dspFullPath);
+    msmFreePointer((void**)&dspFullPathDir);
+    msmFreePointer((void**)&defaultdspPath);
+    return RPMRC_FAIL;
+}
+
+/**
+ * Creates a directory for the smack rules. 
+ * @param rootDir	--root rpm optional prefix
+ * @return		RPMRC_OK or RPMRC_FAIL
+ */
+rpmRC msmSetupSmackRulesDir(const char* rootDir)
+{
+    char *smackRulesFullPath = NULL;
+    rpmRC res = RPMRC_FAIL;
+
+    smackRulesFullPath = rpmGenPath(rootDir, SMACK_RULES_PATH, NULL);
+    rpmlog(RPMLOG_DEBUG, "smackRulesFullPath for SMACK_RULES_PATH %s\n", smackRulesFullPath);
+
+    if (!smackRulesFullPath){
+        rpmlog(RPMLOG_ERR, "Building a full path failed for smack rules path\n");
+    	return res;
+    }
+
+    if (rpmioMkpath(smackRulesFullPath, 0744, getuid(), getgid()) != 0) {
+        rpmlog(RPMLOG_ERR, "Failed to create a directory for smack rules\n");
+    } else {
+        res = RPMRC_OK;
+    }
+
+    msmFreePointer((void**)&smackRulesFullPath);
+    return res;
 }
 

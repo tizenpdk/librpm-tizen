@@ -35,7 +35,6 @@
 #include <sys/stat.h>
 
 #include <rpm/rpmfileutil.h>
-#include <rpm/rpmmacro.h>
 #include <rpm/rpmpgp.h>
 #include <rpm/rpmkeyring.h>
 #include <rpm/rpmdb.h>
@@ -77,341 +76,56 @@ typedef struct packagecontext {
     struct smack_accesses *smack_accesses;	/*!<  handle to smack_accesses */
 } packagecontext;
 
-static rpmts ts = NULL;
-static int rootSWSource= 0;
-static manifest_x *root = NULL; /* pointer to device security policy file */
+static rpmts ts = NULL;				/* rpm transaction */
+static manifest_x *dsp = NULL; 			/* pointer to device security policy file */
 static packagecontext *context = NULL;
 static sw_source_x *current = NULL;
 static packagecontext *contextsHead = NULL;
 static packagecontext *contextsTail = NULL;
 static fileconflict *allfileconflicts = NULL;
-static char* ownSmackLabel = NULL;
-static int SmackEnabled = 0;
+static char* ownSmackLabel = NULL;		/* rpm smack security context */
+static int SmackEnabled = 0;			/* indicates if Smack is enabled in kernel or not */
 static magic_t cookie = NULL;
 static int package_created = 0;
 
-static int copyFile(char *old_filename, char  *new_filename)
+/* Support functions */
+
+/**
+ * Frees the given pointer and sets it to NULL
+ * @param ptr	address of pointer to be freed
+ * @return NULL
+ */
+static packagecontext *msmFree(packagecontext *ctx)
 {
-    FD_t ptr_old, ptr_new;
-    int res;
-
-    ptr_old = Fopen(old_filename, "r.fdio");
-    ptr_new = Fopen(new_filename, "w.fdio");
-
-    if ((ptr_old == NULL) || (Ferror(ptr_old))) {
-        return  -1;
+    while (ctx) {
+        packagecontext *next = ctx->next;
+        msmFreePointer((void**)&ctx->data);
+        ctx->mfx = msmFreeManifestXml(ctx->mfx);
+        if (ctx->smack_accesses) smack_accesses_free(ctx->smack_accesses);
+        msmFreePointer((void**)&ctx);
+        ctx = next;
     }
-
-    if ((ptr_new == NULL) || (Ferror(ptr_new))) {
-        Fclose(ptr_old);
-        return  -1;
-    }
-
-    res = ufdCopy(ptr_old, ptr_new);
-
-    Fclose(ptr_new);
-    Fclose(ptr_old);
-    return res;
+    return NULL;
 }
 
-rpmRC PLUGINHOOK_INIT_FUNC(rpmts _ts, const char *name, const char *opts)
+/**
+ * Frees the given pointer and sets it to NULL
+ * @param ptr	address of pointer to be freed
+ * @return
+ */
+void msmFreePointer(void** ptr)
 {
-    ts = _ts;
-    char *fullPath = NULL, *fullPath1 = NULL;
-    char *defaultPolicyPath = NULL;
-    struct stat buf;
-
-    if (!ts)
-        return RPMRC_FAIL;
-
-    fullPath = rpmGenPath(ts->rootDir, DEVICE_SECURITY_POLICY, NULL);
-    rpmlog(RPMLOG_DEBUG, "fullPath %s\n", fullPath);
-    if (!fullPath) {
-        rpmlog(RPMLOG_ERR, "Building a full path failed for device security policy\n");
-        goto plugin_error;
-    }
-
-    if (stat(fullPath, &buf) != 0) { // the policy file is missing
-        if (ts->rootDir) { // we are running with --root option and policy is missing, need to copy it for now
-            // first create prefix for it
-            char *sysconfdir = rpmExpand("%{?_sysconfdir}", NULL);
-            if (!sysconfdir || !strcmp(sysconfdir, "")) {
-		rpmlog(RPMLOG_ERR, "Failed to expand %%_sysconfdir macro\n");
-                goto plugin_error;
-            }
-            fullPath1 = rpmGenPath(ts->rootDir, sysconfdir, NULL);
-            rpmlog(RPMLOG_DEBUG, "fullPath1 %s\n", fullPath1);
-            msmFreePointer((void**)&sysconfdir);
-            if (!fullPath1) {
-		rpmlog(RPMLOG_ERR, "Building a full path for sysconfdir failed\n");
-                goto plugin_error;
-            }
-            if (rpmioMkpath(fullPath1, 0755, getuid(), getgid()) != 0) {
-                    rpmlog(RPMLOG_ERR, "Failed to create a path for policy file\n");
-                    goto plugin_error;
-            }
-            defaultPolicyPath = rpmExpand("%{?__transaction_msm_default_policy}", NULL);
-            if (!defaultPolicyPath || !strcmp(defaultPolicyPath, "")) {
-                rpmlog(RPMLOG_ERR, "Failed to expand transaction_msm_default_policy macro\n");
-                goto plugin_error;
-            }
-            if(copyFile(defaultPolicyPath, fullPath) == -1) {
-		/* Do not allow plug-in to proceed without security policy existing */
-		rpmlog(RPMLOG_ERR, "Failed to copy the policy outside of chroot. Abort installation.\n");
-                goto plugin_error;
-            }
-	} else {
-            /* Do not allow plug-in to proceed without security policy existing */
-            rpmlog(RPMLOG_ERR, "Policy file is missing at %s. Abort installation.\n",
-		   fullPath);
-            goto plugin_error;
-        }
-    }
-
-    rpmlog(RPMLOG_DEBUG, "reading device security policy from %s\n", fullPath);
-    root = msmProcessDevSecPolicyXml(fullPath);
-
-    if (!root) {
-        rpmlog(RPMLOG_ERR, "Failed process sw sources from %s\n", fullPath);
-        goto plugin_error;
-    } else {
-        if (msmSetupSWSources(NULL, root, NULL)) {
-            rpmlog(RPMLOG_ERR, "Failed to setup security policy from %s\n",fullPath);
-            goto plugin_error;
-        }
-    }
-
-    msmFreePointer((void**)&fullPath);
-    msmFreePointer((void**)&fullPath1);
-    msmFreePointer((void**)&defaultPolicyPath);
-
-    fullPath = rpmGenPath(ts->rootDir, SMACK_LOAD_PATH, NULL);
-    rpmlog(RPMLOG_DEBUG, "fullPath for SMACK_LOAD_PATH %s\n", fullPath);
-    if (!fullPath) {
-        rpmlog(RPMLOG_ERR, "Building a full path for smack load failed\n");
-        goto plugin_error;
-    }
-
-    /* check its own security context and store it for the case when packages without manifest will be installed */
-    if (stat(fullPath, &buf) == 0) {
-        int res = smack_new_label_from_self(&ownSmackLabel);
-        SmackEnabled = 1;
-        if (res < 0) {
-            rpmlog(RPMLOG_ERR, "Failed to obtain rpm security context\n");
-            goto plugin_error;
-        }
-    } else {
-        rpmlog(RPMLOG_INFO, "Smackfs isn't mounted at %s. Going to the image build mode. \n", fullPath);
-        ownSmackLabel = strdup("_");
-        SmackEnabled = 0;
-    }
-
-    msmFreePointer((void**)&fullPath);    
-    fullPath = rpmGenPath(ts->rootDir, SMACK_RULES_PATH, NULL);
-    fullPath1 = rpmGenPath(ts->rootDir, SMACK_RULES_PATH_BEG, NULL);
-    rpmlog(RPMLOG_DEBUG, "fullPath for SMACK_RULES_PATH %s\n", fullPath);
-    rpmlog(RPMLOG_DEBUG, "fullPath1 for SMACK_RULES_PATH_BEG %s\n", fullPath1);
-    if ((!fullPath) || (!fullPath1)){
-        rpmlog(RPMLOG_ERR, "Building a full path failed for smack rules path\n");
-    	goto plugin_error;
-    }
-
-    if (stat(fullPath, &buf) != 0) {
-        rpmlog(RPMLOG_DEBUG, "A directory for writing smack rules is missing. Creating one.\n");
-        mode_t mode = S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IROTH; // 644 -rwer--r--
-        if (stat(fullPath1, &buf) != 0) {
-            if (mkdir(fullPath1, mode) != 0) {
-                rpmlog(RPMLOG_ERR, "Failed to create a sub-directory for smack rules\n");
-                goto plugin_error;
-            }    
-        }
-        if (mkdir(fullPath, mode) != 0){
-            rpmlog(RPMLOG_ERR, "Failed to create a directory for smack rules\n");
-            goto plugin_error;
-        } 
-    }
-
-    msmFreePointer((void**)&fullPath);    
-    msmFreePointer((void**)&fullPath1);    
-
-    rpmlog(RPMLOG_DEBUG, "rpm security context: %s\n", ownSmackLabel);
-
-    cookie = magic_open(0); 
-    if (!cookie)
-        return RPMRC_FAIL; 
-
-    if (magic_load(cookie, NULL) != 0) {
-        rpmlog(RPMLOG_ERR, "cannot load magic database - %s\n", magic_error(cookie));	
-        magic_close(cookie);
-        cookie = NULL;
-        return RPMRC_FAIL;
-    }
-
-    return RPMRC_OK;
-
-plugin_error:
-    msmFreePointer((void**)&fullPath);
-    msmFreePointer((void**)&fullPath1);
-    msmFreePointer((void**)&defaultPolicyPath);
-    return RPMRC_FAIL;
+    if (*ptr)
+        free(*ptr);
+    *ptr = NULL;
+    return;
 }
 
-static int findSWSourceByName(sw_source_x *sw_source, void *param, void* param2)
-{
-    const char *name = (const char *)param;
-    return strcmp(sw_source->name, name); 
-}
-
-rpmRC PLUGINHOOK_FILE_CONFLICT_FUNC(rpmts ts, char* path,
-				      Header oldHeader, rpmfi oldFi, 
-				      int rpmrc)
-{
-    fileconflict *fc;
-    if (!path)
-        return rpmrc;
-
-    rpmlog(RPMLOG_DEBUG, "FILE_CONFLICT_FUNC hook  path %s\n",path);
-
-    const char *name = headerGetString(oldHeader, RPMTAG_SECSWSOURCE);
-    const char *pkg_name = headerGetString(oldHeader, RPMTAG_NAME);
-    if (!name || !root || !pkg_name) {
-        return rpmrc; /* no sw source(s) or package name - abnormal state */
-    }
-
-    sw_source_x *sw_source = msmSWSourceTreeTraversal(root->sw_sources, findSWSourceByName, (void *)name, NULL);
-    if (!sw_source)
-        return rpmrc; /* no old sw_source - abnormal state */
-
-    HASH_FIND(hh, allfileconflicts, path, strlen(path), fc);
-    if (!fc) {
-        /* Add new file conflict into hash */
-        fc = xcalloc(1, sizeof(*fc));
-        if (!fc) return RPMRC_FAIL;
-        fc->path = path;
-        fc->sw_source = sw_source;
-        fc->pkg_name = strdup(pkg_name);
-        if (!fc->pkg_name) return RPMRC_FAIL;
-        HASH_ADD_KEYPTR(hh, allfileconflicts, path, strlen(path), fc);
-    } else {
-        /* Many packages have installed the same file */
-        if (strcmp(sw_source->rankkey, fc->sw_source->rankkey) <= 0) {
-            /* Change sw source to the higher ranked one */
-            fc->sw_source = sw_source;
-        }
-        msmFreePointer((void**)&path);
-    }
-
-    if (rpmtsFilterFlags(ts) & RPMPROB_FILTER_REPLACEOLDFILES) {
-        /* Conflict has been noted, now return ok. It will be actually */
-        /* resolved later when conflicting package signature is verified */
-        /* and sw_source is known. */
-        return rpmrc;
-    }
-    return rpmrc;
-}
-
-rpmRC PLUGINHOOK_TSM_PRE_FUNC(rpmts ts)
-{
-    if (!root) {
-        rpmlog(RPMLOG_DEBUG, "Policy is missing. Ending transaction\n");
-        return RPMRC_FAIL;
-    }
-
-    return RPMRC_OK;
-}
-
-static int findSWSourceBySignature(sw_source_x *sw_source, void *param, void* param2)
-{
-    origin_x *origin;
-    keyinfo_x *keyinfo;
-    pgpDigParams sig = (pgpDigParams)param;
-    DIGEST_CTX ctx = (DIGEST_CTX)param2;
-    pgpDigParams key = NULL;
-
-    for (origin = sw_source->origins; origin; origin = origin->prev) {
-        for (keyinfo = origin->keyinfos; keyinfo; keyinfo = keyinfo->prev) {
-	    if (pgpPrtParams(keyinfo->keydata, keyinfo->keylen, PGPTAG_PUBLIC_KEY, &key)) {
-                rpmlog(RPMLOG_ERR, "invalid sw source key\n");
-                return -1;
-            }
-            if (pgpVerifySignature(key, sig, ctx) == RPMRC_OK) {
-                return 0;
-            }
-        }
-    }
-    return 1;
-}
-
-rpmRC PLUGINHOOK_VERIFY_FUNC(rpmKeyring keyring, rpmtd sigtd, pgpDigParams sig, DIGEST_CTX ctx, int rpmrc)
-{
-    current = NULL;
-
-#if 0 
-    if (!root) {
-        if (rpmrc == RPMRC_NOKEY) {
-            rpmlog(RPMLOG_INFO, "package verified as root sw source\n");
-            rootSWSource = 1; /* accept any signed package as root */
-            return RPMRC_OK;
-        }
-        rpmlog(RPMLOG_ERR, "No device security policy, cannot verify signature\n");
-        return rpmrc;
-    } 
-
-    // make currently that even non-signed package with root policy will be treated as trusted
-
-    if (!root) {
-        rpmlog(RPMLOG_INFO, "package verified as root sw source\n");
-        rootSWSource = 1; /* accept any signed package as root */
-        return RPMRC_OK;
-    } 
-
-    //------------------
-
-#endif
-
-    if (!root) {
-        rpmlog(RPMLOG_ERR, "No device policy found\n");
-        rootSWSource = 1; /* accept any signed package as root */
-        return rpmrc;
-    } 
-
-    if (rpmrc == RPMRC_NOKEY) {
-        /* No key, revert to unknown sw source. */
-        rpmlog(RPMLOG_ERR, "no key for signature, cannot search sw source\n");
-        goto exit;
-    }
-    if (rpmrc) {
-        /* RPM failed to verify signature */
-        rpmlog(RPMLOG_ERR, "Invalid signature, cannot search sw source\n");
-        return rpmrc;
-    }
-    if (sigtd->tag != RPMSIGTAG_RSA) {
-        /* Not RSA, revert to unknown sw source. */
-        rpmlog(RPMLOG_DEBUG, "no RSA signature, cannot search sw source\n");
-        goto exit;
-    }
-
-    current = msmSWSourceTreeTraversal(root->sw_sources, findSWSourceBySignature, sig, ctx);
-    if (current)
-        rpmlog(RPMLOG_DEBUG, "signature matches sw source %s\n", current->name);
-    else
-        rpmlog(RPMLOG_DEBUG, "valid signature but no matching sw source\n");
-
- exit:
-    if (!current) {
-        current = msmSWSourceTreeTraversal(root->sw_sources, findSWSourceByName, (void *)"_default_", NULL);
-        if (current) {
-            rpmlog(RPMLOG_DEBUG, "using _default_ sw source\n");
-        } else { // for now in case default sw source isn't there yet, allow to think that it is coming from root
-            current = msmSWSourceTreeTraversal(root->sw_sources, findSWSourceByName, (void *)"root", NULL);
-            if (current)
-                rpmlog(RPMLOG_DEBUG, "using _root_ sw source now for testing\n");
-        }
-    }
-
-    return rpmrc;
-}
-
+/**
+ * Creates a new package context
+ * @param te	rpm te struct
+ * @return created package context
+ */
 static packagecontext *msmNew(rpmte te)
 {
     Header h;
@@ -454,8 +168,6 @@ static packagecontext *msmNew(rpmte te)
         /* Save sw_source name into database, we need it when package */
         /* is removed because signature verify is not called then. */
         if (current) sw_source = current->name;
-        else if (rootSWSource) sw_source = rpmteN(ctx->te);
-
         if (!sw_source || !headerPutString(h, RPMTAG_SECSWSOURCE, sw_source)) {
             rpmlog(RPMLOG_ERR, "Failed to save sw source for %s, sw_source: %s\n", 
 		   rpmteN(ctx->te), sw_source);
@@ -468,6 +180,11 @@ static packagecontext *msmNew(rpmte te)
     return ctx;
 }
 
+/**
+ * Creates and adds a te package context to a context list
+ * @param te	rpm te struct
+ * @return created and added package context
+ */
 static packagecontext *msmAddTE(rpmte te)
 {
     packagecontext *ctx = msmNew(te);
@@ -491,6 +208,164 @@ static packagecontext *msmAddTE(rpmte te)
     return ctx;
 }
 
+/* -------------------- */
+
+/* Implementation of hooks */
+/* Hooks are listed in the call sequence inside rpm code */
+
+rpmRC PLUGINHOOK_INIT_FUNC(rpmts _ts, const char *name, const char *opts)
+{
+    ts = _ts;
+
+    if (!ts)
+        return RPMRC_FAIL;
+
+    if (msmLoadDeviceSecurityPolicy(ts->rootDir, &dsp) == RPMRC_FAIL)
+        return RPMRC_FAIL;
+
+    if (!dsp)
+        return RPMRC_FAIL;
+
+    /* smackfs path doesn't need to be prefixed with ts->rootDir 
+       since it is only used for loading rules to kernel and libsmack will load it
+       by itself to the correct path */
+
+    if (smack_smackfs_path() == NULL) {
+        rpmlog(RPMLOG_INFO, "Smackfs isn't mounted at %s. Going to the image build mode. \n", smack_smackfs_path());
+        ownSmackLabel = strdup("_");
+        SmackEnabled = 0;
+    } else {
+        /* check its own security context and store it for the case when packages without manifest will be installed */
+        int res = smack_new_label_from_self(&ownSmackLabel);
+        SmackEnabled = 1;
+        if (res < 0) {
+            rpmlog(RPMLOG_ERR, "Failed to obtain rpm security context\n");
+            return RPMRC_FAIL;
+        }
+    }
+
+    rpmlog(RPMLOG_DEBUG, "rpm security context: %s\n", ownSmackLabel);
+
+    if (msmSetupSmackRulesDir(ts->rootDir) == RPMRC_FAIL)
+        return RPMRC_FAIL;
+
+    cookie = magic_open(0); 
+    if (!cookie)
+        return RPMRC_FAIL; 
+
+    if (magic_load(cookie, NULL) != 0) {
+        rpmlog(RPMLOG_ERR, "cannot load magic database - %s\n", magic_error(cookie));	
+        magic_close(cookie);
+        cookie = NULL;
+        return RPMRC_FAIL;
+    }
+
+    return RPMRC_OK;
+}
+
+rpmRC PLUGINHOOK_FILE_CONFLICT_FUNC(rpmts ts, char* path,
+				      Header oldHeader, rpmfi oldFi, 
+				      int rpmrc)
+{
+    fileconflict *fc;
+    if ((!path) || (!dsp))
+        return rpmrc;
+
+    rpmlog(RPMLOG_DEBUG, "FILE_CONFLICT_FUNC hook path %s\n",path);
+
+    /* uncomment this code if you wish that plugin obeys --replacefiles rpm flag
+    if (rpmtsFilterFlags(ts) & RPMPROB_FILTER_REPLACEOLDFILES) {
+        return rpmrc;
+    } */
+
+    const char *sw_source_name = headerGetString(oldHeader, RPMTAG_SECSWSOURCE);
+    const char *pkg_name = headerGetString(oldHeader, RPMTAG_NAME);
+    if (!sw_source_name || !pkg_name) {
+        return rpmrc; /* no sw source or package name - abnormal state */
+    }
+
+    sw_source_x *sw_source = msmSWSourceTreeTraversal(dsp->sw_sources, msmFindSWSourceByName, (void *)sw_source_name, NULL);
+    if (!sw_source)
+        return rpmrc; /* no old sw_source - abnormal state */
+
+    HASH_FIND(hh, allfileconflicts, path, strlen(path), fc);
+    if (!fc) {
+        /* Add new file conflict into hash */
+        fc = xcalloc(1, sizeof(*fc));
+        if (!fc) return RPMRC_FAIL;
+        fc->path = path;
+        fc->sw_source = sw_source;
+        fc->pkg_name = strdup(pkg_name);
+        if (!fc->pkg_name) return RPMRC_FAIL;
+        HASH_ADD_KEYPTR(hh, allfileconflicts, path, strlen(path), fc);
+    } else {
+        /* Many packages have installed the same file */
+        if (strcmp(sw_source->rankkey, fc->sw_source->rankkey) <= 0) {
+            /* Change sw source to the higher ranked one */
+            fc->sw_source = sw_source;
+        }
+        msmFreePointer((void**)&path);
+    }
+
+    return rpmrc;
+}
+
+rpmRC PLUGINHOOK_TSM_PRE_FUNC(rpmts ts)
+{
+    if (!dsp) {
+        rpmlog(RPMLOG_ERR, "Device security policy is missing. Unable to proceed\n");
+        return RPMRC_FAIL;
+    }
+
+    return RPMRC_OK;
+}
+
+rpmRC PLUGINHOOK_VERIFY_FUNC(rpmKeyring keyring, rpmtd sigtd, pgpDigParams sig, DIGEST_CTX ctx, int rpmrc)
+{
+    current = NULL;
+
+    if (!dsp) {
+        rpmlog(RPMLOG_ERR, "No device policy found\n");
+        return rpmrc;
+    } 
+
+    if (rpmrc == RPMRC_NOKEY) {
+        /* No key, revert to unknown sw source. */
+        rpmlog(RPMLOG_ERR, "no key for signature, cannot search sw source\n");
+        goto exit;
+    }
+    if (rpmrc) {
+        /* RPM failed to verify signature */
+        rpmlog(RPMLOG_ERR, "Invalid signature, cannot search sw source\n");
+        goto exit;
+    }
+    if (sigtd->tag != RPMSIGTAG_RSA) {
+        /* Not RSA, revert to unknown sw source. */
+        rpmlog(RPMLOG_DEBUG, "not an RSA signature, cannot search sw source\n");
+        goto exit;
+    }
+
+    current = msmSWSourceTreeTraversal(dsp->sw_sources, msmFindSWSourceBySignature, sig, ctx);
+    if (current)
+        rpmlog(RPMLOG_DEBUG, "signature matches sw source %s\n", current->name);
+    else
+        rpmlog(RPMLOG_DEBUG, "valid signature but no matching sw source\n");
+
+ exit:
+    if (!current) {
+        current = msmSWSourceTreeTraversal(dsp->sw_sources, msmFindSWSourceByName, (void *)"_default_", NULL);
+        if (current) {
+            rpmlog(RPMLOG_DEBUG, "using _default_ sw source\n");
+        } else { // for now in case default sw source isn't there yet, allow to think that it is coming from root
+            current = msmSWSourceTreeTraversal(dsp->sw_sources, msmFindSWSourceByName, (void *)"root", NULL);
+            if (current)
+                rpmlog(RPMLOG_DEBUG, "using _root_ sw source now for testing\n");
+        }
+    }
+
+    return rpmrc;
+}
+
 rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
 {
     packagecontext *ctx = NULL;
@@ -502,18 +377,18 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
 
     package_created = 0;
 
-    if (!root && !rootSWSource) {
-        /* no sw source config, just exit */
-        goto exit;
+    if (!dsp) {
+        rpmlog(RPMLOG_ERR, "Device security policy is missing. Unable to proceed\n");
+        return RPMRC_FAIL;
     }
 
     if (!current) {
         /* this means that verify hook has not been called */
-        current = msmSWSourceTreeTraversal(root->sw_sources, findSWSourceByName, (void *)"_default_", NULL);
+        current = msmSWSourceTreeTraversal(dsp->sw_sources, msmFindSWSourceByName, (void *)"_default_", NULL);
         if (current) {
             rpmlog(RPMLOG_DEBUG, "using _default_ sw source\n");
         } else { 
-            rpmlog(RPMLOG_ERR, "Default source isn't availiable. Package source can't be determined. Abort installation\n");
+            rpmlog(RPMLOG_ERR, "Default source isn't avaliable. Package source can't be determined. Abort installation\n");
             goto fail;
         }
     }
@@ -531,7 +406,7 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
         if (h) {
             const char *name = headerGetString(h, RPMTAG_SECSWSOURCE);
             if (name) { 
-                current = msmSWSourceTreeTraversal(root->sw_sources, findSWSourceByName, (void *)name, NULL);
+                current = msmSWSourceTreeTraversal(dsp->sw_sources, msmFindSWSourceByName, (void *)name, NULL);
                 rpmlog(RPMLOG_DEBUG, "removing %s from sw source %s\n",
 		       rpmteN(ctx->te), name);
             }
@@ -590,11 +465,12 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
         rpmlog(RPMLOG_DEBUG, "Installing the package\n");
         package_x *package = NULL;
 
-        if (rootSWSource) {
-            /* this is the first package */
+        /*if (rootSWSource) {
+            // this is the first package that brings the policy
             package = msmCreatePackage(mfx->name, mfx->sw_sources, 
 					    mfx->provides, NULL);
-        } else if (mfx->sw_source) {
+        } else */
+        if (mfx->sw_source) {
             /* all packages must have sw_source */
             package = msmCreatePackage(mfx->name, mfx->sw_source, 
 					    mfx->provides, NULL);
@@ -628,15 +504,17 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
         }
 
         package_created = 1;
-        if (rootSWSource) {
-            /* current is root */
-            root = ctx->mfx;
-        } 
+        
+        /*if (rootSWSource) {
+            // current configuration becomes dsp
+            dsp = ctx->mfx;
+        } */
 
         rpmlog(RPMLOG_DEBUG, "Starting the security setup...\n");
         unsigned int smackLabel = 0;
 
-        if (rootSWSource || ctx->mfx->sw_source) {
+        /*if (rootSWSource || ctx->mfx->sw_source) {*/
+        if (ctx->mfx->sw_source) {
             if (ctx->mfx->sw_sources) {
                 smackLabel = 1; /* setting this one on since this manifest doesn't have any define/request section */
                 ret = msmSetupSWSources(ctx->smack_accesses, ctx->mfx, ts);
@@ -719,7 +597,7 @@ rpmRC PLUGINHOOK_PSM_PRE_FUNC(rpmte te)
 
 rpmRC PLUGINHOOK_FSM_INIT_FUNC(const char* path, mode_t mode)
 {
-    //check if there any conflicts that prevent file being written to the disk
+    /* Check if there any conflicts that prevent file being written to the disk */
 
     fileconflict *fc;
     packagecontext *ctx = context;
@@ -734,8 +612,6 @@ rpmRC PLUGINHOOK_FSM_INIT_FUNC(const char* path, mode_t mode)
     cleanedPath = strchr(dupPath, ';');
     if (cleanedPath)
         *cleanedPath = '\0';
-
-    //rpmlog(RPMLOG_DEBUG, "dupapth: %s\n", dupPath);
 
     HASH_FIND(hh, allfileconflicts, dupPath, strlen(dupPath), fc);
     msmFreePointer((void**)&dupPath);
@@ -761,13 +637,16 @@ rpmRC PLUGINHOOK_FSM_INIT_FUNC(const char* path, mode_t mode)
 
 rpmRC PLUGINHOOK_FSM_COMMIT_FUNC(const char* path, mode_t mode, int type)
 {
+    /* Setup xattrs for the given path */
+
     packagecontext *ctx = context;
+
+    rpmlog(RPMLOG_DEBUG, "Started with FSM_COMMIT_FUNC hook for file: %s\n", path);
+
     if (!ctx) return RPMRC_FAIL;
     if (!path) return RPMRC_FAIL;
 
-    /* the type is ignored for now */
-
-    rpmlog(RPMLOG_DEBUG, "Started with FSM_COMMIT_FUNC hook for file: %s\n", path);
+    /* the type option is ignored for now */
 
     if (ctx->mfx) {
         file_x *file = xcalloc(1, sizeof(*file));
@@ -818,10 +697,10 @@ rpmRC PLUGINHOOK_PSM_POST_FUNC(rpmte te, int rpmrc)
         return RPMRC_FAIL;
     }
 
-    if (rootSWSource) {
-        /* current is root */
-        root = context->mfx;
-    } 
+    /* if (rootSWSource) {
+        // current configuration becomes dsp
+        dsp = context->mfx;
+    } */
 
     if (rpmteType(ctx->te) == TR_REMOVED) {
         if (ctx->mfx->sw_source) {
@@ -847,25 +726,14 @@ rpmRC PLUGINHOOK_TSM_POST_FUNC(rpmts ts, int rpmrc)
     packagecontext *ctx = context;
     msmFreeInternalHashes(); // free hash structures first
 
-    if (root) {
-        msmSaveDeviceSecPolicyXml(root, ts->rootDir);
-        if (!rootSWSource) root = msmFreeManifestXml(root);
+    if (dsp) {
+        msmSaveDeviceSecPolicyXml(dsp, ts->rootDir);
+        /* if (!rootSWSource) dsp = msmFreeManifestXml(dsp); */
+        dsp = msmFreeManifestXml(dsp);
+
     }
     if (!ctx) return RPMRC_FAIL;
     return RPMRC_OK;
-}
-
-static packagecontext *msmFree(packagecontext *ctx)
-{
-    while (ctx) {
-        packagecontext *next = ctx->next;
-        msmFreePointer((void**)&ctx->data);
-        ctx->mfx = msmFreeManifestXml(ctx->mfx);
-        if (ctx->smack_accesses) smack_accesses_free(ctx->smack_accesses);
-        msmFreePointer((void**)&ctx);
-        ctx = next;
-    }
-    return NULL;
 }
 
 rpmRC PLUGINHOOK_CLEANUP_FUNC(void)
@@ -890,12 +758,4 @@ rpmRC PLUGINHOOK_CLEANUP_FUNC(void)
     if (cookie) magic_close(cookie);
 
     return RPMRC_OK;
-}
-
-void msmFreePointer(void** ptr)
-{
-    if (*ptr)
-        free(*ptr);
-    *ptr = NULL;
-    return;
 }

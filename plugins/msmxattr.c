@@ -1194,8 +1194,8 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
                 }
                 len = strlen(filesystem->path);
                 rpmlog(RPMLOG_DEBUG, "filepath: %s, filesystem->type %s\n", filepath, filesystem->type);
-                rpmlog(RPMLOG_DEBUG, "filesystem->path: %s, length %d, match %d\n", filesystem->path, len, match);
-                rpmlog(RPMLOG_DEBUG, "filesystem->path + len - 1: %s\n", filesystem->path + len - 1);
+                //rpmlog(RPMLOG_DEBUG, "filesystem->path: %s, length %d, match %d\n", filesystem->path, len, match);
+                //rpmlog(RPMLOG_DEBUG, "filesystem->path + len - 1: %s\n", filesystem->path + len - 1);
                 if (len > match) {
                     if ((!strncmp(filepath, filesystem->path, len)) && (filesystem->type)) {
                         /* partial match and the directory marked as transmutable*/

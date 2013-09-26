@@ -822,7 +822,7 @@ static int msmProcessDefine(xmlTextReaderPtr reader, define_x *define, manifest_
     return ret;
 }
 
-static int findSWSourceByKey(sw_source_x *sw_source, void *param)
+int msmFindSWSourceByKey(sw_source_x *sw_source, void *param)
 {
     origin_x *origin;
     keyinfo_x *keyinfo;
@@ -835,6 +835,34 @@ static int findSWSourceByKey(sw_source_x *sw_source, void *param)
                    && (current_keyinfo->keylen == keyinfo->keylen))
 			return 0;
 	    }
+    }
+    return 1;
+}
+
+int msmFindSWSourceByName(sw_source_x *sw_source, void *param)
+{
+    const char *name = (const char *)param;
+    return strcmp(sw_source->name, name); 
+}
+
+int msmFindSWSourceBySignature(sw_source_x *sw_source, void *param, void* param2)
+{
+    origin_x *origin;
+    keyinfo_x *keyinfo;
+    pgpDigParams sig = (pgpDigParams)param;
+    DIGEST_CTX ctx = (DIGEST_CTX)param2;
+    pgpDigParams key = NULL;
+
+    for (origin = sw_source->origins; origin; origin = origin->prev) {
+        for (keyinfo = origin->keyinfos; keyinfo; keyinfo = keyinfo->prev) {
+	    if (pgpPrtParams(keyinfo->keydata, keyinfo->keylen, PGPTAG_PUBLIC_KEY, &key)) {
+                rpmlog(RPMLOG_ERR, "invalid sw source key\n");
+                return -1;
+            }
+            if (pgpVerifySignature(key, sig, ctx) == RPMRC_OK) {
+                return 0;
+            }
+        }
     }
     return 1;
 }
@@ -858,7 +886,7 @@ static int msmProcessKeyinfo(xmlTextReaderPtr reader, origin_x *origin, sw_sourc
 	    }
 	    if (!ret) {
 		// check that keys aren't matching
-		sw_source_x *old = msmSWSourceTreeTraversal(parent, findSWSourceByKey, (void *)keyinfo, NULL);
+		sw_source_x *old = msmSWSourceTreeTraversal(parent, msmFindSWSourceByKey, (void *)keyinfo, NULL);
 		if (old) {
 		    rpmlog(RPMLOG_ERR, "SW source with this key has already been installed\n");
 		    return -1; 
@@ -974,12 +1002,6 @@ static int msmProcessAllow(xmlTextReaderPtr reader, sw_source_x *sw_source)
 	if (ret < 0) return ret;
     }
     return ret;
-}
-
-static int msmFindSWSourceByName(sw_source_x *sw_source, void *param)
-{
-    const char *name = (const char *)param;
-    return strcmp(sw_source->name, name); 
 }
 
 static int msmProcessSWSource(xmlTextReaderPtr reader, sw_source_x *sw_source, const char *parentkey, manifest_x *mfx) 

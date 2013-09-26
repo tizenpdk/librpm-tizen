@@ -29,15 +29,12 @@
 #ifndef MSM_H
 #define MSM_H
 
-#define IMA "security.ima"
-#define SMACK64TRANSMUTE "security.SMACK64TRANSMUTE"
 #define SMACK64 "security.SMACK64"
 #define SMACK64EXEC "security.SMACK64EXEC"
+#define SMACK64TRANSMUTE "security.SMACK64TRANSMUTE"
 
 #define SMACK_RULES_PATH "/etc/smack/accesses.d/"
-#define SMACK_RULES_PATH_BEG "/etc/smack/"
 #define DEVICE_SECURITY_POLICY "/etc/device-sec-policy"
-#define SMACK_LOAD_PATH "/sys/fs/smackfs/load"
 
 #define SMACK_ISOLATED_LABEL "Isolated"
 
@@ -312,11 +309,26 @@ void msmFreePointer(void **ptr);
 manifest_x *msmProcessManifestXml(const char *buffer, int size, sw_source_x *current, const char *packagename);
 
 /** \ingroup msm
+ * Loads device security policy.
+ * @param rootDir	--root rpm optional prefix
+ * @param dsp		pointer to the loaded policy
+ * @return		RPMRC_OK or RPMRC_FAIL
+ */
+rpmRC msmLoadDeviceSecurityPolicy(const char* rootDir, manifest_x **dsp);
+
+/** \ingroup msm
  * Process device security policy file.
  * @param filename	file name
  * @return		pointer to structure on success
  */
 manifest_x *msmProcessDevSecPolicyXml(const char *filename);
+
+/** \ingroup msm
+ * Creates a directory for the smack rules. 
+ * @param rootDir	--root rpm optional prefix
+ * @return		RPMRC_OK or RPMRC_FAIL
+ */
+rpmRC msmSetupSmackRulesDir(const char* rootDir);
 
 /** \ingroup msm
  * Free all structures reserved during manifest processing.
@@ -457,4 +469,30 @@ sw_source_x *msmSWSourceTreeTraversal(sw_source_x *sw_sources, int (func)(sw_sou
  * Free internal hashes.
  */
 void msmFreeInternalHashes(void);
+
+/** \ingroup msm
+ * Finds a sw source by key info.
+ * @param sw_source	sw source
+ * @param param		searched param
+ * @return		0 if found
+ */
+int msmFindSWSourceByKey(sw_source_x *sw_source, void *param);
+
+/** \ingroup msm
+ * Finds a sw source by sw source name.
+ * @param sw_source	sw source
+ * @param param		searched param
+ * @return		0 if found
+ */
+int msmFindSWSourceByName(sw_source_x *sw_source, void *param);
+
+/** \ingroup msm
+ * Finds a sw source by sw source signature.
+ * @param sw_source	sw source
+ * @param param		searched param
+ * @param param2	searched param2
+ * @return		0 if found
+ */
+int msmFindSWSourceBySignature(sw_source_x *sw_source, void *param, void* param2);
+
 #endif
