@@ -1,3 +1,8 @@
+* Tue Oct 01 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 4.11.0.1.tizen20130618
+- lua: fall through failed lua scripts
+- lua: Enable Lua
+- Ignore bad expressions in %if conditionals
+
 * Wed Aug 21 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 4.11.0.1.tizen20130618
 - fix segmentation fault error while parsing spec
 - Bump the log level of "unexpanded script" msg
