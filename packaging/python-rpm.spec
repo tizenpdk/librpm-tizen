@@ -24,7 +24,8 @@ BuildRequires:  libxml2-devel
 BuildRequires:  libattr-devel
 BuildRequires:  pkgconfig(libsmack)
 Requires:       rpm = %{version}
-%{expand:%(sed -n -e '/^Source0:/,/^BuildRoot:/p' <%_sourcedir/rpm.spec)}
+%{expand:%(sed -n -e '/^### SOURCES BEGIN ###/,/^### SOURCES END ###/p' <%_sourcedir/rpm.spec)}
+Source0:        rpm-%{version}.tar.bz2
 %global with_python 2
 
 %description
@@ -36,7 +37,11 @@ This package should be installed if you want to develop Python programs
 that will manipulate RPM packages and databases.
 
 %prep
-%{expand:%(sed -n -e '/^%%prep/,/^%%install/p' <%_sourcedir/rpm.spec | sed -e '1d' -e '$d')}
+%setup -q -n rpm-%{version}
+%{expand:%(sed -n -e '/^### PREP BEGIN ###/,/^### PREP END ###/p' <%_sourcedir/rpm.spec)}
+
+%build
+%{expand:%(sed -n -e '/^### BUILD BEGIN ###/,/^### BUILD END ###/p' <%_sourcedir/rpm.spec)}
 
 %install
 mkdir -p %{buildroot}%{_prefix}/lib

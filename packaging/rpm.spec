@@ -36,7 +36,8 @@ BuildRequires:  pkgconfig(libsmack)
 
 Provides:       rpminst
 Provides:	    rpm-libs
-Source0:        rpm-%{version}.tar.bz2
+
+### SOURCES BEGIN ###
 Source1:       	db-4.8.30.tar.bz2
 Source2:	    db-4.8.30-integration.dif
 Source4:        rpm-tizen_macros
@@ -45,6 +46,9 @@ Source13:	    find-docs.sh
 Source22:	    device-sec-policy
 Source23:       find-provides.ksyms
 Source1001: 	rpm.manifest
+### SOURCES END ###
+Source0:        rpm-%{version}.tar.bz2
+
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 #
 # avoid bootstrapping problem
@@ -103,6 +107,7 @@ security-related functionality.
 
 %prep
 %setup -q -n rpm-%{version}
+### PREP BEGIN ###
 cp %{SOURCE1001} .
 rm -rf sqlite
 tar xjf %{S:1}
@@ -118,8 +123,10 @@ fi
 cp -a %{SOURCE4} tizen_macros
 rm -f m4/libtool.m4
 rm -f m4/lt*.m4
+### PREP END ###
 
 %build
+### BUILD BEGIN ###
 CPPFLAGS="$CPPFLAGS `pkg-config --cflags nss`"
 export CPPFLAGS 
 export CFLAGS="%{optflags} -ffunction-sections"
@@ -142,6 +149,7 @@ autoreconf -i -f
 --with-acl --with-cap  --enable-shared %{?with_python: --enable-python} --with-msm $BUILDTARGET
 
 make %{?_smp_mflags}
+### BUILD END ###
 
 %install
 mkdir -p %{buildroot}/usr/lib
