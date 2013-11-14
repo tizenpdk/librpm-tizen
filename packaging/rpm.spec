@@ -29,7 +29,7 @@ BuildRequires:  xz-devel
 BuildRequires:  pkgconfig(zlib)
 BuildRequires:  pkgconfig(nss)
 BuildRequires:  uthash-devel
-BuildRequires:  libxml2-devel
+BuildRequires:  pkgconfig(libxml-2.0)
 BuildRequires:  libattr-devel
 BuildRequires:  pkgconfig(libsmack)
 

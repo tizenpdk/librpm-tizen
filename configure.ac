@@ -688,6 +688,16 @@ AS_IF([test "$with_msm" = yes],[
   ],[
     AC_MSG_ERROR([--with-msm given, but sys/capability.h not found])
   ])
+
+  PKG_CHECK_MODULES(
+    [LIBXML2],
+    [libxml-2.0 >= 2.0],
+    [AC_DEFINE(WITH_LIBXML2, 1, [Build with libxml2 support])],
+    [AC_MSG_ERROR([--with-msm given, but libxml2 not found])]
+  )
+  AC_SUBST(LIBXML2_CFLAGS)
+  AC_SUBST(LIBXML2_LIBS)
+
   AC_CHECK_HEADER([attr/xattr.h],[
     save_LIBS="$LIBS"
     AC_CHECK_LIB([attr],[setxattr],[],[

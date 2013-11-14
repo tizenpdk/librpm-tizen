@@ -26,8 +26,9 @@ plugins_LTLIBRARIES += sepolicy.la
 endif
 
 if MSM
+AM_CPPFLAGS += @LIBXML2_CFLAGS@
 msm_la_SOURCES = plugin.h msm.h msm-plugin.c msmconfig.c msmmatch.c msmxattr.c msmmanifest.c
-msm_la_LIBADD = $(top_builddir)/lib/librpm.la $(top_builddir)/rpmio/librpmio.la @WITH_MSM_LIB@
+msm_la_LIBADD = $(top_builddir)/lib/librpm.la $(top_builddir)/rpmio/librpmio.la @WITH_MSM_LIB@ @LIBXML2_LIBS@
 
 plugins_LTLIBRARIES += msm.la
 endif
