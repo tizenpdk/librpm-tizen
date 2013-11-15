@@ -3,7 +3,7 @@ Version:        4.11.0.1
 Release:        0
 Summary:        Python Bindings for Manipulating RPM Packages
 License:        GPL-2.0+
-Group:          System/Packages
+Group:          Base/Package Management
 Source99:       rpm.spec
 BuildRequires:  gettext-tools
 BuildRequires:  file-devel

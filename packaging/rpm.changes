@@ -1,3 +1,10 @@
+* Fri Nov 15 2013 Rusty Lynch <rusty.lynch@intel.com> accepted/tizen/20131108.201843@93d4902
+- Fix rpmlint error
+- PTREL-155: fix build python-rpm
+- armv7l:fix faulty line in rpmrc.in
+- msm: check libxml/{xmlreader,tree}.h
+- Security plugin: Removing definition of System domain from default device policy
+
 * Wed Sep 25 2013 Jacek Bukarewicz <j.bukarewicz@samsung.com> accepted/tizen/20130916.211819@a771cdf
 - Introduction of -locale and -docs subpackages. Moved package to another group
 - update changes
