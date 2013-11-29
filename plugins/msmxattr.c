@@ -1220,6 +1220,7 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
  found:
     if (exec_label) {
         execLabeldefined = 1;
+#if 0
         if ((strcmp(exec_label, "none") == 0) 
             || ( (mfx->request) && (mfx->request->ac_domain) && (strcmp(exec_label, mfx->request->ac_domain) == 0))) {
             // these labels are allowed
@@ -1229,6 +1230,7 @@ int msmSetFileXAttributes(manifest_x *mfx, const char* filepath, magic_t cookie)
             rpmlog(RPMLOG_DEBUG, "It isn't allowed to label the file with smack64label other than requested ac domain or \"none\" value\n");
             rpmlog(RPMLOG_DEBUG, "The default ac domain label will be used instead\n");
         }
+#endif
     }	
     if ((!label) || (!exec_label)) {
         /* no match, use default label of AC domain */
