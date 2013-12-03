@@ -1,3 +1,6 @@
+* Tue Dec 03 2013 Rusty Lynch <rusty.lynch@intel.com> accepted/tizen/20131115.212447@d460069
+- Security plugin: removing exec label restriction
+
 * Fri Nov 15 2013 Rusty Lynch <rusty.lynch@intel.com> accepted/tizen/20131108.201843@93d4902
 - Fix rpmlint error
 - PTREL-155: fix build python-rpm
