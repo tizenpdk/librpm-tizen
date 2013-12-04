@@ -57,7 +57,7 @@ static int msmVerifyAccessType(const char* type)
         }
         while ( type[idx] != '\0' ){
             if ((type[idx] !='a') && (type[idx]!='r') && (type[idx]!='w') &&
-                (type[idx]!='x') && (type[idx]!='t') && (type[idx] !='-')) {
+                (type[idx]!='x') && (type[idx]!='t') && (type[idx]!='l') && (type[idx] !='-')) {
                 rpmlog(RPMLOG_ERR, "Not allowed character in access type: %s\n", type);
                 res = -1;
                 break;
