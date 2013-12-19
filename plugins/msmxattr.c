@@ -825,7 +825,7 @@ int msmSetupDBusPolicies(package_x *package, manifest_x *mfx)
 
 static int msmCheckDomainRequestOrPermit(manifest_x *mfx, const char* domain) 
 {
-    ac_domain_x *defined_ac_domain = NULL; 
+    ac_domain_x *defined_ac_domain = NULL;
     define_x *define = NULL;
     char* name = NULL;
 
@@ -837,41 +837,51 @@ static int msmCheckDomainRequestOrPermit(manifest_x *mfx, const char* domain)
     strncpy(name, domain, strlen(domain));
     strtok(name, ":");  // remove label name if present
     rpmlog(RPMLOG_DEBUG, "label name %s domain name %s \n", domain, name);
-	
+
     HASH_FIND(hh, all_ac_domains, name, strlen(name), defined_ac_domain);
-    if (!defined_ac_domain) { // request or permit for an undefined domain. 
-        rpmlog(RPMLOG_ERR, "A domain name %s hasn't been yet defined by any package. Can't verify if it is allowed\n", name);
-        msmFreePointer((void**)&name);
-        return -1;
-    }
+    if (!defined_ac_domain) // request or permit for an undefined domain.
+        // FIXME: maybe this should be changed to a command-line option that
+        // would be used during the image build?
+        rpmlog(RPMLOG_WARNING, "The domain '%s' has not been yet defined by "\
+               "any package\n");
 
     //now check that this ac_domain can be requested
     if (mfx->defines) {
         LISTHEAD(mfx->defines, define);
         while (define) {
-            rpmlog(RPMLOG_DEBUG, "define->name %s domain %s\n", define->name, name);
+            rpmlog(RPMLOG_DEBUG, "define->name %s domain %s\n", define->name,
+                   name);
             if (strcmp(define->name, name) == 0) {
-                // AC domain access is requested or permitted from the same package where it was defined. 
-                // This case is always allowed
+                // AC domain access is requested or permitted from the same
+                // package where it was defined. This case is always allowed.
                 msmFreePointer((void**)&name);
-                return 0;		
+                return 0;
             }
             define = define->next;
         }
     } 
 
-    // no need to check if developer allowed other packages to request/permit this domain
-    // because this isn't a request to belong to a domain, but request/permit for domain access
-    if (msmIsRequestAllowed(mfx, defined_ac_domain)) {
+    // no need to check if developer allowed other packages to
+    // request/permit this domain because this isn't a request to
+    // belong to a domain, but request/permit for domain access
+    if (!defined_ac_domain)
+        // FIXME: maybe this should be changed to a command-line option that
+        // would be used during the image build?
+        rpmlog(RPMLOG_WARNING, "Request/Permit to access the domain '%s' is "\
+               "unknown\n", name);
+    else if (msmIsRequestAllowed(mfx, defined_ac_domain))
         // request or permit is allowed by domain policy
-        rpmlog(RPMLOG_DEBUG, "Request/Permit to access a domain name %s is allowed based on package sw source\n", name);
-        msmFreePointer((void**)&name);
-        return 0;
-    } else {
-        rpmlog(RPMLOG_ERR, "Request/Permit to access a domain name %s isn't allowed based on package sw source\n", name);
+        rpmlog(RPMLOG_DEBUG, "Request/Permit to access the domain '%s' is "\
+               "allowed based on package SW source\n", name);
+    else {
+        rpmlog(RPMLOG_ERR, "Request/Permit access the domain '%s' is not "\
+               "allowed based on package SW source\n", name);
         msmFreePointer((void**)&name);
         return -1;
     }
+
+    msmFreePointer((void**)&name);
+    return 0;
 }
 
 int msmSetupDefines(struct smack_accesses *smack_accesses, manifest_x *mfx)
