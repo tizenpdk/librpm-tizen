@@ -51,7 +51,8 @@ static int msmVerifyAccessType(const char* type)
     int res = 0, idx = 0;
 
     if (type) {
-        if (strlen(type) > SMACK_ACCESS_TYPE_LENGHT) {
+        if (strnlen(type, SMACK_ACCESS_TYPE_LENGTH + 1) >
+            SMACK_ACCESS_TYPE_LENGTH) {
             rpmlog(RPMLOG_ERR, "Lenght of the access type is bigger than allowed value: %s\n", type);
             return -1;
         }
