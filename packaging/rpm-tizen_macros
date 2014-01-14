@@ -13,6 +13,9 @@
 %rb_arch                %(echo %{_host_cpu}-linux | sed -e "s/i686/i586/" -e "s/armv5tel/armv4l/" -e "s/hppa2.0/hppa/")
 %rb_ver                 %(/usr/bin/ruby -e 'puts VERSION.sub(/\\\.\\\d$/, "")')
 
+# external kernel module helper macro(s)
+%kernel_devel_uname_r %(/bin/rpm -q --provides $(/bin/rpm -q --whatprovides kernel-devel-uname-r) | sed -ne 's,kernel-devel-uname-r = ,, p')
+
 # this script calls all scripts in /usr/lib/rpm/brp-tizen.d
 %__os_install_post  \
 	/usr/lib/rpm/brp-compress \
