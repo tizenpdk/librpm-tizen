@@ -1,3 +1,8 @@
+* Fri Jan 17 2014 Mikko Ylinen <mikko.ylinen@intel.com> accepted/tizen/generic/20140106.135159@e9e247d
+- MSM: fix access type length and validation
+- Security plugin: change policy to advisory
+- Security plugin: adding support for l access type
+
 * Tue Dec 03 2013 Rusty Lynch <rusty.lynch@intel.com> accepted/tizen/20131115.212447@d460069
 - Security plugin: removing exec label restriction
 
