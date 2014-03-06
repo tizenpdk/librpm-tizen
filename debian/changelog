@@ -1,3 +1,10 @@
+librpm-tizen (4.11.0.1.tizen20130618-tizen20140306) unstable; urgency=low
+
+  [ Markus Lehtonen ]
+  * Fix build against Lua 5.2
+
+ -- Markus Lehtonen <markus.lehtonen@linux.intel.com>  Thu, 06 Mar 2014 12:43:43 +0200
+
 librpm-tizen (4.11.0.1.tizen20130618-tizen20131001) unstable; urgency=low
 
   * Ignore bad expressions in %if conditionals

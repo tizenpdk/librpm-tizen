@@ -60,7 +60,7 @@ Source1001:    rpm.manifest
 Source0:        rpm-%{version}.tar.gz
 AutoReqProv:    No
 
-Provides:       rpm-tizen = %{version}-tizen20131001
+Provides:       rpm-tizen = %{version}-tizen20140306
 #
 # avoid bootstrapping problem
 %define _binary_payload w9.bzdio

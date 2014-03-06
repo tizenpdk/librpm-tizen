@@ -1,3 +1,6 @@
+* Thu Mar 06 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> tizen-tools/4.11.0.1.tizen20130618-20140306
+- Fix build against Lua 5.2
+
 * Tue Oct 01 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 4.11.0.1.tizen20130618
 - lua: fall through failed lua scripts
 - lua: Enable Lua
