@@ -1,7 +1,8 @@
-%define rpmhome /usr/lib/rpm
+%define rpmlibdir %{_prefix}/lib
+%define rpmhome %{rpmlibdir}/rpm
 
 Name:           rpm
-Summary:        The RPM Package Manager
+Summary:        The Package Manager
 License:        GPL-2.0+
 Group:          Base/Package Management
 Version:        4.11.0.1
@@ -16,8 +17,9 @@ BuildRequires:  gettext-tools
 BuildRequires:  glibc-devel
 BuildRequires:  gzip
 BuildRequires:  libacl-devel
+BuildRequires:  libattr-devel
 BuildRequires:  pkgconfig(bzip2)
-BuildRequires:  libcap-devel
+BuildRequires:  pkgconfig(libcap)
 BuildRequires:  libelf-devel
 BuildRequires:  libtool
 BuildRequires:  pkgconfig(lua)
@@ -30,26 +32,21 @@ BuildRequires:  pkgconfig(zlib)
 BuildRequires:  pkgconfig(nss)
 BuildRequires:  uthash-devel
 BuildRequires:  pkgconfig(libxml-2.0)
-BuildRequires:  libattr-devel
 BuildRequires:  pkgconfig(libsmack)
-
+BuildRequires:  fdupes
 
 Provides:       rpminst
-Provides:	    rpm-libs
+Provides:       rpm-libs
 
-### SOURCES BEGIN ###
-Source1:       	db-4.8.30.tar.bz2
-Source2:	    db-4.8.30-integration.dif
-Source4:        rpm-tizen_macros
-Source8:        rpmconfigcheck
-Source13:	    find-docs.sh
-Source22:	    device-sec-policy
-Source23:       find-provides.ksyms
-Source1001: 	rpm.manifest
-### SOURCES END ###
+Source1:       db-4.8.30.tar.bz2
+Source2:       db-4.8.30-integration.dif
+Source4:       rpm-tizen_macros
+Source8:       rpmconfigcheck
+Source13:      find-docs.sh
+Source22:      device-sec-policy
+Source23:      find-provides.ksyms
+Source1001:    rpm.manifest
 Source0:        rpm-%{version}.tar.bz2
-
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 #
 # avoid bootstrapping problem
 %define _binary_payload w9.bzdio
@@ -66,7 +63,7 @@ all installed packages.  RPM also supports database queries.
 %package devel
 Summary:        Include Files and Libraries mandatory for Development
 Requires:       rpm = %{version}
-Requires:       popt-devel
+Requires:       pkgconfig(popt)
 
 %description devel
 This package contains the RPM C library and header files.  These
@@ -78,7 +75,7 @@ need an intimate knowledge of RPM packages in order to function.
 %package build
 Summary:        Tools and Scripts to create rpm packages
 Requires:       rpm = %{version}
-Provides:       rpmbuild rpm:%_bindir/rpmbuild
+Provides:       rpmbuild rpm:%{_bindir}/rpmbuild
 Requires:       bzip2
 Requires:       xz
 Requires:       gzip
@@ -91,23 +88,33 @@ Requires:       glibc-devel
 
 %description build
 If you want to build a rpm, you need this package. It provides rpmbuild
-and requires some packages that are usually required 
+and requires some packages that are usually required
 
 %package security-plugin
 Summary: MSM security plugin for rpm
 Requires: rpm = %{version}-%{release}
 Requires: smack
-Requires: libxml2
 Requires: nss
 
 %description security-plugin
 This package contains the MSM security plugin for rpm that performs
-security-related functionality. 
+security-related functionality.
 
+%package -n python-rpm
+Summary: Python Bindings for Manipulating RPM Packages
+Requires:       rpm = %{version}
+BuildRequires:  pkgconfig(python)
+
+%description -n python-rpm
+The python-rpm package contains a module that permits applications
+written in the Python programming language to use the interface
+supplied by RPM Package Manager libraries.
+
+This package should be installed if you want to develop Python programs
+that will manipulate RPM packages and databases.
 
 %prep
 %setup -q -n rpm-%{version}
-### PREP BEGIN ###
 cp %{SOURCE1001} .
 rm -rf sqlite
 tar xjf %{S:1}
@@ -116,88 +123,85 @@ chmod -R u+w db/*
 # will get linked from db3
 rm -f rpmdb/db.h
 patch -p0 < %{S:2}
-
-if [ -s /etc/rpm/tizen_macros ]; then
-	cp -a /etc/rpm/tizen_macros %{SOURCE4}
+if [ -s %{_sysconfdir}/rpm/tizen_macros ]; then
+    cp -a %{_sysconfdir}/rpm/tizen_macros %{SOURCE4}
 fi
 cp -a %{SOURCE4} tizen_macros
 rm -f m4/libtool.m4
 rm -f m4/lt*.m4
-### PREP END ###
 
 %build
-### BUILD BEGIN ###
 CPPFLAGS="$CPPFLAGS `pkg-config --cflags nss`"
-export CPPFLAGS 
+export CPPFLAGS
 export CFLAGS="%{optflags} -ffunction-sections"
-export LDFLAGS="-Wl,-Bsymbolic-functions -ffunction-sections"
+export LDFLAGS="${LDFLAGS} -Wl,-Bsymbolic-functions -ffunction-sections"
 %ifarch armv5tel
 export CFLAGS="-g -O0 -fno-strict-aliasing -ffunction-sections"
 %endif
 
 %if %{_target_cpu}
+BUILDTARGET="--host=%{_target_cpu}-linux-gnu "
 %ifarch %arm
-BUILDTARGET="--build=%{_target_cpu}-tizen-linux-gnueabi"
+BUILDTARGET+="--build=%{_target_cpu}-tizen-linux-gnueabi "
 %else
-BUILDTARGET="--build=%{_target_cpu}-tizen-linux"
+BUILDTARGET+="--build=%{_target_cpu}-tizen-linux "
 %endif
 %endif
 
-autoreconf -i -f
-./configure --disable-dependency-tracking --prefix=%{_prefix} --mandir=%{_mandir} --infodir=%{_infodir} \
---libdir=%{_libdir} --sysconfdir=/etc --localstatedir=/var  --with-lua \
---with-acl --with-cap  --enable-shared %{?with_python: --enable-python} --with-msm $BUILDTARGET
+%reconfigure \
+    --disable-dependency-tracking \
+    --with-lua \
+    --with-acl \
+    --with-cap \
+    --enable-shared \
+    --enable-python \
+    --with-msm \
+    $BUILDTARGET
 
 make %{?_smp_mflags}
-### BUILD END ###
 
 %install
-mkdir -p %{buildroot}/usr/lib
-mkdir -p %{buildroot}/usr/share/locale
-ln -s ../share/locale %{buildroot}/usr/lib/locale
+mkdir -p %{buildroot}%{rpmlibdir}
+mkdir -p %{buildroot}%{_datadir}/locale
+ln -s ../share/locale %{buildroot}%{rpmlibdir}/locale
 %make_install
-install -m 644 db3/db.h %{buildroot}/usr/include/rpm
-# remove .la file and the static variant of libpopt
-# have to remove the dependency from other .la files as well
-#for f in %{buildroot}/%{_libdir}/*.la; do
-#    sed -i -e "s,/%_lib/libpopt.la,-lpopt,g" $f
-#done
+install -m 644 db3/db.h %{buildroot}%{_includedir}/rpm
 mkdir -p %{buildroot}%{_sysconfdir}/rpm
-cp -a tizen_macros %{buildroot}/usr/lib/rpm
-mkdir -p %{buildroot}/usr/lib/rpm/tizen
-install -m 755 %{SOURCE13} %{buildroot}/usr/lib/rpm/tizen
-install -m 755 %{SOURCE23} %{buildroot}/usr/lib/rpm
+cp -a tizen_macros %{buildroot}%{rpmhome}
+mkdir -p %{buildroot}%{rpmhome}/tizen
+install -m 755 %{SOURCE13} %{buildroot}%{rpmhome}/tizen
+install -m 755 %{SOURCE23} %{buildroot}%{rpmhome}
 install -m 644 %{SOURCE22} %{buildroot}%{_sysconfdir}/device-sec-policy
-install -m 644 %{SOURCE22} %{buildroot}%{_libdir}/rpm-plugins/msm-device-sec-policy
-ln -s ../tizen_macros %{buildroot}/usr/lib/rpm/tizen/macros
+install -m 644 %{SOURCE22} %{buildroot}%{__plugindir}/msm-device-sec-policy
+ln -s ../tizen_macros %{buildroot}%{rpmhome}/tizen/macros
 for d in BUILD RPMS SOURCES SPECS SRPMS BUILDROOT ; do
-  mkdir -p %{buildroot}/usr/src/packages/$d
-  chmod 755 %{buildroot}/usr/src/packages/$d
+  mkdir -p %{buildroot}%{_usrsrc}/packages/$d
+  chmod 755 %{buildroot}%{_usrsrc}/packages/$d
 done
-for d in %{buildroot}/usr/lib/rpm/platform/*-linux/macros ; do
+for d in %{buildroot}%{rpmhome}/platform/*-linux/macros ; do
   dd=${d%%-linux/macros}
   dd=${dd##*/}
-  mkdir %{buildroot}/usr/src/packages/RPMS/$dd
-  chmod 755 %{buildroot}/usr/src/packages/RPMS/$dd
+  mkdir -p %{buildroot}%{_usrsrc}/packages/RPMS/$dd
+  chmod 755 %{buildroot}%{_usrsrc}/packages/RPMS/$dd
 done
-mkdir -p %{buildroot}/var/lib/rpm
-gzip -9 %{buildroot}/%{_mandir}/man[18]/*.[18]
+mkdir -p %{buildroot}%{_localstatedir}/lib/rpm
+gzip -9 %{buildroot}%{_mandir}/man[18]/*.[18]
 export RPM_BUILD_ROOT
 chmod 755 doc/manual
 rm -rf doc/manual/Makefile*
-rm -f %{buildroot}/usr/lib/rpmpopt
+rm -f %{buildroot}%{rpmlibdir}/rpmpopt
 rm -rf %{buildroot}%{_mandir}/{fr,ja,ko,pl,ru,sk}
-rm -f %{buildroot}%{_prefix}/share/locale/de/LC_MESSAGES/rpm.mo
-rm -f %{buildroot}/usr/lib/rpm/cpanflute %{buildroot}/usr/lib/rpm/cpanflute2
-install -m 755 scripts/find-supplements{,.ksyms} %{buildroot}/usr/lib/rpm
-install -m 755 scripts/firmware.prov %{buildroot}/usr/lib/rpm
-install -m 755 scripts/debuginfo.prov %{buildroot}/usr/lib/rpm
-rm -f %{buildroot}/usr/lib/locale %{buildroot}/usr/lib/rpmrc
-mkdir -p %{buildroot}/etc/rpm
-chmod 755 %{buildroot}/etc/rpm
+rm -f %{buildroot}%{_datadir}/locale/de/LC_MESSAGES/rpm.mo
+rm -f %{buildroot}%{rpmhome}/cpanflute %{buildroot}%{rpmhome}/cpanflute2
+install -m 755 scripts/find-supplements{,.ksyms} %{buildroot}%{rpmhome}
+install -m 755 scripts/firmware.prov %{buildroot}%{rpmhome}
+install -m 755 scripts/debuginfo.prov %{buildroot}%{rpmhome}
+rm -f %{buildroot}%{rpmlibdir}/locale %{buildroot}%{rpmlibdir}/rpmrc
+mkdir -p %{buildroot}%{_sysconfdir}/rpm
+chmod 755 %{buildroot}%{_sysconfdir}/rpm
 mkdir -p %{buildroot}%{rpmhome}/macros.d
 # remove some nonsense or non-working scripts
-pushd %{buildroot}/usr/lib/rpm/
+pushd %{buildroot}%{rpmhome}/
 for f in rpm2cpio.sh rpm.daily rpmdiff* rpm.log rpm.xinetd freshen.sh u_pkg.sh \
          magic magic.mgc magic.mime* rpmfile *.pl javadeps brp-redhat \
          brp-strip-static-archive vpkg-provides*.sh http.req sql.req tcl.req \
@@ -205,36 +209,43 @@ for f in rpm2cpio.sh rpm.daily rpmdiff* rpm.log rpm.xinetd freshen.sh u_pkg.sh \
 do
     rm -f $f
 done
-for i in /usr/share/automake-*/*; do
+for i in %{_datadir}/automake-*/*; do
   if test -f "$i" && test -f "${i##*/}"; then
     rm -f "${i##*/}"
   fi
 done
 popd
-rm -rf %{buildroot}/%{_libdir}/python%{py_ver}
 rm -f %{buildroot}%{_libdir}/*.la
-rm -f %{buildroot}%{_libdir}/rpm-plugins/*.la
-sh %{buildroot}/usr/lib/rpm/find-lang.sh %{buildroot} rpm
+rm -f %{buildroot}%{__plugindir}/*.la
+
+%fdupes %{buildroot}%{rpmhome}/platform
+
+sh %{buildroot}%{rpmhome}/find-lang.sh %{buildroot} rpm
+
 %ifarch armv7hl armv7l
-# rpm is using the host_cpu as default for the platform, but armv7hl is not known by the kernel.
+# rpm is using the host_cpu as default for the platform,
+#but armv7hl is not known by the kernel.
 # so we need to enforce the platform here.
-echo -n %{_target_cpu}-tizen-linux-gnueabi > %{buildroot}/etc/rpm/platform
+echo -n %{_target_cpu}-tizen-linux-gnueabi > %{buildroot}%{_sysconfdir}/rpm/platform
 %endif
 
 %post
 /sbin/ldconfig
-test -f var/lib/rpm/Packages || rpm --initdb
-rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion var/lib/rpm/Provideversion
+test -f %{_dbpath}/Packages || rpm --initdb
+rm -f %{_dbpath}/Filemd5s \
+      %{_dbpath}/Filedigests \
+      %{_dbpath}/Requireversion \
+      %{_dbpath}/Provideversion
 
-%postun 
+%postun
 /sbin/ldconfig
 
 %files
 %manifest %{name}.manifest
 %defattr(-,root,root)
 %license COPYING
-	/etc/rpm
-	/bin/rpm
+%{_sysconfdir}/rpm
+/bin/rpm
 %{_bindir}/rpm2cpio
 %{_bindir}/rpmdb
 %{_bindir}/rpmkeys
@@ -251,21 +262,20 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 %{rpmhome}/rpm.supp
 %{rpmhome}/tgpg
 %{rpmhome}/platform
-
-%dir 	%{_libdir}/rpm-plugins
-	%{_libdir}/rpm-plugins/exec.so
-	%{_libdir}/librpm.so.*
-	%{_libdir}/librpmio.so.*
-    %{_libdir}/librpmbuild.so.*
-    %{_libdir}/librpmsign.so.*
-%dir 	/var/lib/rpm
-%dir 	%attr(755,root,root) /usr/src/packages/BUILD
-%dir 	%attr(755,root,root) /usr/src/packages/SPECS
-%dir 	%attr(755,root,root) /usr/src/packages/SOURCES
-%dir 	%attr(755,root,root) /usr/src/packages/SRPMS
-%dir	%attr(755,root,root) /usr/src/packages/RPMS
-%dir	%attr(755,root,root) /usr/src/packages/BUILDROOT
-%dir	%attr(755,root,root) /usr/src/packages/RPMS/*
+%dir    %{__plugindir}
+%{__plugindir}/exec.so
+%{_libdir}/librpm.so.*
+%{_libdir}/librpmio.so.*
+%{_libdir}/librpmbuild.so.*
+%{_libdir}/librpmsign.so.*
+%dir    %{_localstatedir}/lib/rpm
+%dir    %attr(755,root,root) %{_usrsrc}/packages/BUILD
+%dir    %attr(755,root,root) %{_usrsrc}/packages/SPECS
+%dir    %attr(755,root,root) %{_usrsrc}/packages/SOURCES
+%dir    %attr(755,root,root) %{_usrsrc}/packages/SRPMS
+%dir    %attr(755,root,root) %{_usrsrc}/packages/RPMS
+%dir    %attr(755,root,root) %{_usrsrc}/packages/BUILDROOT
+%dir    %attr(755,root,root) %{_usrsrc}/packages/RPMS/*
 
 %files build
 %manifest %{name}.manifest
@@ -274,7 +284,6 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 %{_bindir}/gendiff
 %{_bindir}/rpmspec
 %{_bindir}/rpmsign
-
 %{rpmhome}/tizen/find-*
 %{rpmhome}/brp-*
 %{rpmhome}/find-supplements*
@@ -291,27 +300,30 @@ rm -f var/lib/rpm/Filemd5s var/lib/rpm/Filedigests var/lib/rpm/Requireversion va
 %{rpmhome}/macros.*
 %{rpmhome}/fileattrs
 
-
 %files devel
 %manifest %{name}.manifest
 %defattr(644,root,root,755)
-%{_bindir}/rpmgraph
-/usr/include/rpm
-        %{_libdir}/librpm.so
-        %{_libdir}/librpmbuild.so
-        %{_libdir}/librpmio.so
-        %{_libdir}/librpmsign.so
-        %{_libdir}/pkgconfig/rpm.pc
+%attr(755,root,root) %{_bindir}/rpmgraph
+%{_includedir}/rpm
+%{_libdir}/librpm.so
+%{_libdir}/librpmbuild.so
+%{_libdir}/librpmio.so
+%{_libdir}/librpmsign.so
+%{_libdir}/pkgconfig/rpm.pc
 
 %files security-plugin
 %manifest %{name}.manifest
 %defattr(-,root,root)
-%{_libdir}/rpm-plugins/msm.so
-%{_libdir}/rpm-plugins/msm-device-sec-policy
+%{__plugindir}/msm.so
+%{__plugindir}/msm-device-sec-policy
 %config(noreplace) %{_sysconfdir}/device-sec-policy
+
+%files -n python-rpm
+%defattr(-,root,root)
+%{_libdir}/python*/site-packages/rpm
+%attr(755,root,root) %{_libdir}/python*/site-packages/rpm/transaction.py
 
 %lang_package
 
 %docs_package
-%doc 	GROUPS
-
+%doc     GROUPS
