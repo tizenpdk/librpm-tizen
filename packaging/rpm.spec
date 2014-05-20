@@ -139,15 +139,6 @@ export LDFLAGS="${LDFLAGS} -Wl,-Bsymbolic-functions -ffunction-sections"
 export CFLAGS="-g -O0 -fno-strict-aliasing -ffunction-sections"
 %endif
 
-%if %{_target_cpu}
-BUILDTARGET="--host=%{_target_cpu}-linux-gnu "
-%ifarch %arm
-BUILDTARGET+="--build=%{_target_cpu}-tizen-linux-gnueabi "
-%else
-BUILDTARGET+="--build=%{_target_cpu}-tizen-linux "
-%endif
-%endif
-
 %reconfigure \
     --disable-dependency-tracking \
     --with-lua \
@@ -155,8 +146,7 @@ BUILDTARGET+="--build=%{_target_cpu}-tizen-linux "
     --with-cap \
     --enable-shared \
     --enable-python \
-    --with-msm \
-    $BUILDTARGET
+    --with-msm 
 
 make %{?_smp_mflags}
 
