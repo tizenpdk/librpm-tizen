@@ -5,7 +5,7 @@ Name:           librpm-tizen
 Summary:        The RPM libraries for git-buildpackage
 License:        GPL-2.0+
 Group:          Development/Tools/Building
-Version:        4.11.0.1.tizen20130618
+Version:        4.11.0.1.tizen20140530
 Release:        0
 Url:            http://www.rpm.org
 BuildRequires:  binutils
@@ -60,7 +60,7 @@ Source1001:    rpm.manifest
 Source0:        rpm-%{version}.tar.gz
 AutoReqProv:    No
 
-Provides:       rpm-tizen = %{version}-tizen20140306
+Provides:       rpm-tizen = %{version}-tizen20140611
 #
 # avoid bootstrapping problem
 %define _binary_payload w9.bzdio

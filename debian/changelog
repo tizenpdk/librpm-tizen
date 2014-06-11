@@ -1,3 +1,9 @@
+librpm-tizen (4.11.0.1.tizen20140530-tizen20140611) UNRELEASED; urgency=low
+
+  * Rebase on latest Tizen 3.0
+
+ -- Markus Lehtonen <markus.lehtonen@linux.intel.com>  Wed, 11 Jun 2014 17:50:05 +0300
+
 librpm-tizen (4.11.0.1.tizen20130618-tizen20140306) unstable; urgency=low
 
   [ Markus Lehtonen ]

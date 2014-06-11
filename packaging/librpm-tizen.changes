@@ -1,3 +1,6 @@
+* Wed Jun 11 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> tizen/4.11.0.1.tizen20140530-38-g7bf2b1d
+- Rebase on latest Tizen 3.0
+
 * Thu Mar 06 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> tizen-tools/4.11.0.1.tizen20130618-20140306
 - Fix build against Lua 5.2
 
