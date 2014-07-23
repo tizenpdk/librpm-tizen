@@ -17,7 +17,7 @@ BuildRequires:  glibc-devel
 BuildRequires:  gzip
 BuildRequires:  libtool
 %if 0%{?suse_version}
-BuildRequires:  pkgconfig(lua) < 5.2
+BuildRequires:  pkgconfig(lua)
 %else
 BuildRequires:  lua-devel
 %endif
