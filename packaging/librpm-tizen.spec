@@ -1,3 +1,9 @@
+# Use custom autoreq script for filtering out all librpm* stuff
+# (basically everything that the package would auto-provide) in order to make
+# the package installable
+%define _use_internal_dependency_generator 0
+%define __find_requires bash -c "/usr/lib/rpm/find-requires | grep -v librpm"
+
 %define rpmlibdir %{_prefix}/lib
 %define rpmhome %{rpmlibdir}/rpm
 
@@ -58,7 +64,7 @@ Source22:      device-sec-policy
 Source23:      find-provides.ksyms
 Source1001:    rpm.manifest
 Source0:        rpm-%{version}.tar.gz
-AutoReqProv:    No
+AutoProv:       No
 
 Provides:       rpm-tizen = %{version}-tizen20140611
 #
